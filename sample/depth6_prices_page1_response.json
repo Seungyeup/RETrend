@@ -1,0 +1,80 @@
+{
+  "areaNo": 11,
+  "realPriceOnMonthList": [
+      {
+          "realPriceList": [
+              {
+                  "tradeType": "A1",
+                  "tradeYear": "2025",
+                  "tradeMonth": 3,
+                  "tradeDate": "22",
+                  "dealPrice": 283000,
+                  "floor": 14,
+                  "representativeArea": 0.0,
+                  "exclusiveArea": 0.0,
+                  "formattedPrice": "28억 3,000",
+                  "formattedTradeYearMonth": "2025.03.22"
+              },
+              {
+                  "tradeType": "A1",
+                  "tradeYear": "2025",
+                  "tradeMonth": 3,
+                  "tradeDate": "21",
+                  "dealPrice": 280000,
+                  "floor": 11,
+                  "representativeArea": 0.0,
+                  "exclusiveArea": 0.0,
+                  "formattedPrice": "28억",
+                  "formattedTradeYearMonth": "2025.03.21"
+              },
+              {
+                  "tradeType": "A1",
+                  "tradeYear": "2025",
+                  "tradeMonth": 3,
+                  "tradeDate": "4",
+                  "dealPrice": 270000,
+                  "floor": 15,
+                  "representativeArea": 0.0,
+                  "exclusiveArea": 0.0,
+                  "formattedPrice": "27억",
+                  "formattedTradeYearMonth": "2025.03.04"
+              }
+          ],
+          "tradeBaseYear": "2025",
+          "tradeBaseMonth": 3
+      },
+      {
+          "realPriceList": [
+              {
+                  "tradeType": "A1",
+                  "tradeYear": "2024",
+                  "tradeMonth": 9,
+                  "tradeDate": "27",
+                  "dealPrice": 270000,
+                  "floor": 6,
+                  "representativeArea": 0.0,
+                  "exclusiveArea": 0.0,
+                  "formattedPrice": "27억",
+                  "formattedTradeYearMonth": "2024.09.27"
+              },
+              {
+                  "tradeType": "A1",
+                  "tradeYear": "2024",
+                  "tradeMonth": 9,
+                  "tradeDate": "14",
+                  "dealPrice": 260000,
+                  "floor": 12,
+                  "representativeArea": 0.0,
+                  "exclusiveArea": 0.0,
+                  "formattedPrice": "26억",
+                  "formattedTradeYearMonth": "2024.09.14"
+              }
+          ],
+          "tradeBaseYear": "2024",
+          "tradeBaseMonth": 9
+      }
+  ],
+  "addedRowCount": 5,
+  "totalRowCount": 31,
+  "realPriceBasisYearMonth": "202506"
+}

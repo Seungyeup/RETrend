@@ -1,0 +1,104 @@
+{
+    "areaNo": 11,
+    "realPriceOnMonthList": [
+        {
+            "realPriceList": [
+                {
+                    "tradeType": "A1",
+                    "tradeYear": "2024",
+                    "tradeMonth": 7,
+                    "tradeDate": "6",
+                    "dealPrice": 250000,
+                    "floor": 12,
+                    "representativeArea": 0.0,
+                    "exclusiveArea": 0.0,
+                    "formattedPrice": "25억",
+                    "formattedTradeYearMonth": "2024.07.06"
+                }
+            ],
+            "tradeBaseYear": "2024",
+            "tradeBaseMonth": 7
+        },
+        {
+            "realPriceList": [
+                {
+                    "tradeType": "A1",
+                    "tradeYear": "2024",
+                    "tradeMonth": 6,
+                    "tradeDate": "18",
+                    "dealPrice": 235000,
+                    "floor": 10,
+                    "representativeArea": 0.0,
+                    "exclusiveArea": 0.0,
+                    "formattedPrice": "23억 5,000",
+                    "formattedTradeYearMonth": "2024.06.18"
+                },
+                {
+                    "tradeType": "A1",
+                    "tradeYear": "2024",
+                    "tradeMonth": 6,
+                    "tradeDate": "15",
+                    "dealPrice": 237500,
+                    "floor": 7,
+                    "representativeArea": 0.0,
+                    "exclusiveArea": 0.0,
+                    "formattedPrice": "23억 7,500",
+                    "formattedTradeYearMonth": "2024.06.15"
+                }
+            ],
+            "tradeBaseYear": "2024",
+            "tradeBaseMonth": 6
+        },
+        {
+            "realPriceList": [
+                {
+                    "tradeType": "A1",
+                    "tradeYear": "2024",
+                    "tradeMonth": 5,
+                    "tradeDate": "11",
+                    "dealPrice": 225000,
+                    "floor": 4,
+                    "representativeArea": 0.0,
+                    "exclusiveArea": 0.0,
+                    "formattedPrice": "22억 5,000",
+                    "formattedTradeYearMonth": "2024.05.11"
+                }
+            ],
+            "tradeBaseYear": "2024",
+            "tradeBaseMonth": 5
+        },
+        {
+            "realPriceList": [
+                {
+                    "tradeType": "A1",
+                    "tradeYear": "2024",
+                    "tradeMonth": 3,
+                    "tradeDate": "30",
+                    "dealPrice": 228000,
+                    "floor": 24,
+                    "representativeArea": 0.0,
+                    "exclusiveArea": 0.0,
+                    "formattedPrice": "22억 8,000",
+                    "formattedTradeYearMonth": "2024.03.30"
+                },
+                {
+                    "tradeType": "A1",
+                    "tradeYear": "2024",
+                    "tradeMonth": 3,
+                    "tradeDate": "7",
+                    "dealPrice": 223000,
+                    "floor": 8,
+                    "representativeArea": 0.0,
+                    "exclusiveArea": 0.0,
+                    "formattedPrice": "22억 3,000",
+                    "formattedTradeYearMonth": "2024.03.07"
+                }
+            ],
+            "tradeBaseYear": "2024",
+            "tradeBaseMonth": 3
+        }
+    ],
+    "addedRowCount": 11,
+    "totalRowCount": 31,
+    "realPriceBasisYearMonth": "202506"
+}

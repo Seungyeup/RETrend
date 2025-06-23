@@ -1,0 +1,102 @@
+{
+  "regionList": [
+      {
+          "cortarNo": "1168010300",
+          "centerLat": 37.482968,
+          "centerLon": 127.0634,
+          "cortarName": "개포동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168010800",
+          "centerLat": 37.513583,
+          "centerLon": 127.031375,
+          "cortarName": "논현동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168010600",
+          "centerLat": 37.49911,
+          "centerLon": 127.065463,
+          "cortarName": "대치동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168011800",
+          "centerLat": 37.488143,
+          "centerLon": 127.04505,
+          "cortarName": "도곡동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168010500",
+          "centerLat": 37.514792,
+          "centerLon": 127.055387,
+          "cortarName": "삼성동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168011100",
+          "centerLat": 37.46436,
+          "centerLon": 127.1046,
+          "cortarName": "세곡동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168011500",
+          "centerLat": 37.488856,
+          "centerLon": 127.104886,
+          "cortarName": "수서동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168010700",
+          "centerLat": 37.524142,
+          "centerLon": 127.0229,
+          "cortarName": "신사동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168011000",
+          "centerLat": 37.5291,
+          "centerLon": 127.0236,
+          "cortarName": "압구정동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168010100",
+          "centerLat": 37.499776,
+          "centerLon": 127.03895,
+          "cortarName": "역삼동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168011300",
+          "centerLat": 37.4717,
+          "centerLon": 127.1114,
+          "cortarName": "율현동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168011400",
+          "centerLat": 37.487485,
+          "centerLon": 127.081638,
+          "cortarName": "일원동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168011200",
+          "centerLat": 37.4766,
+          "centerLon": 127.101,
+          "cortarName": "자곡동",
+          "cortarType": "sec"
+      },
+      {
+          "cortarNo": "1168010400",
+          "centerLat": 37.525492,
+          "centerLon": 127.05235,
+          "cortarName": "청담동",
+          "cortarType": "sec"
+      }
+  ]
+}

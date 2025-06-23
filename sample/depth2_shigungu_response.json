@@ -1,0 +1,179 @@
+{
+  "regionList": [
+      {
+          "cortarNo": "1168000000",
+          "centerLat": 37.517408,
+          "centerLon": 127.047313,
+          "cortarName": "강남구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1174000000",
+          "centerLat": 37.530126,
+          "centerLon": 127.123771,
+          "cortarName": "강동구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1130500000",
+          "centerLat": 37.63974,
+          "centerLon": 127.025488,
+          "cortarName": "강북구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1150000000",
+          "centerLat": 37.550985,
+          "centerLon": 126.849534,
+          "cortarName": "강서구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1162000000",
+          "centerLat": 37.481021,
+          "centerLon": 126.951601,
+          "cortarName": "관악구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1121500000",
+          "centerLat": 37.538617,
+          "centerLon": 127.082375,
+          "cortarName": "광진구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1153000000",
+          "centerLat": 37.49551,
+          "centerLon": 126.887532,
+          "cortarName": "구로구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1154500000",
+          "centerLat": 37.45196,
+          "centerLon": 126.902075,
+          "cortarName": "금천구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1135000000",
+          "centerLat": 37.654286,
+          "centerLon": 127.056411,
+          "cortarName": "노원구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1132000000",
+          "centerLat": 37.668768,
+          "centerLon": 127.047163,
+          "cortarName": "도봉구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1123000000",
+          "centerLat": 37.574493,
+          "centerLon": 127.039765,
+          "cortarName": "동대문구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1159000000",
+          "centerLat": 37.51245,
+          "centerLon": 126.9395,
+          "cortarName": "동작구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1144000000",
+          "centerLat": 37.563517,
+          "centerLon": 126.9084,
+          "cortarName": "마포구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1141000000",
+          "centerLat": 37.579225,
+          "centerLon": 126.9368,
+          "cortarName": "서대문구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1165000000",
+          "centerLat": 37.483564,
+          "centerLon": 127.032594,
+          "cortarName": "서초구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1120000000",
+          "centerLat": 37.563475,
+          "centerLon": 127.036838,
+          "cortarName": "성동구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1129000000",
+          "centerLat": 37.5874,
+          "centerLon": 127.020729,
+          "cortarName": "성북구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1171000000",
+          "centerLat": 37.514592,
+          "centerLon": 127.105863,
+          "cortarName": "송파구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1147000000",
+          "centerLat": 37.517007,
+          "centerLon": 126.866546,
+          "cortarName": "양천구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1156000000",
+          "centerLat": 37.526367,
+          "centerLon": 126.896213,
+          "cortarName": "영등포구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1117000000",
+          "centerLat": 37.538825,
+          "centerLon": 126.96535,
+          "cortarName": "용산구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1138000000",
+          "centerLat": 37.60278,
+          "centerLon": 126.929163,
+          "cortarName": "은평구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1111000000",
+          "centerLat": 37.573025,
+          "centerLon": 126.979638,
+          "cortarName": "종로구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1114000000",
+          "centerLat": 37.563842,
+          "centerLon": 126.9976,
+          "cortarName": "중구",
+          "cortarType": "dvsn"
+      },
+      {
+          "cortarNo": "1126000000",
+          "centerLat": 37.606324,
+          "centerLon": 127.092584,
+          "cortarName": "중랑구",
+          "cortarType": "dvsn"
+      }
+  ]
+}
