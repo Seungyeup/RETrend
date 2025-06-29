@@ -117,3 +117,45 @@ dmypy.json
 
 # output
 output/
+
+# Data files and large files
+tmp/*
+!tmp/image/
+*.csv
+*.parquet
+*.json
+*.xlsx
+*.xls
+*.db
+*.sqlite
+*.sqlite3
+
+# Specific data directories
+src/phase1/metastore_db/
+src/phase2/spark-warehouse/
+tmp/raw/
+~/nfs_mount/
+
+# Docker and container files
+*.tar
+*.tar.gz
+*.zip
+*.rar
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
