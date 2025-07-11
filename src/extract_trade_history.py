@@ -44,6 +44,7 @@ cookies = {
     'BUC': 'szce0VgFzh7XFq2LLn7t2JvyMvByiXQQrRS_A3LjFNs='
 }
 
+
 def get_areaNos_from_pyeonginfo(pyeonginfo_csv):
     """평형정보 CSV에서 pyeongNo 리스트 추출 (areaNo로 사용)"""
     if not os.path.exists(pyeonginfo_csv):
@@ -53,6 +54,7 @@ def get_areaNos_from_pyeonginfo(pyeonginfo_csv):
     areaNos = df['pyeongNo'].unique().tolist()  # pyeongNo를 areaNo로 사용
     print(f"[INFO] {len(areaNos)}개의 areaNo(pyeongNo) 추출: {areaNos}")
     return areaNos
+
 
 def fetch_trade_history(complex_no, areaNo):
     """특정 단지/평형(areaNo)의 거래내역을 페이지네이션 따라 모두 수집"""
@@ -89,6 +91,7 @@ def fetch_trade_history(complex_no, areaNo):
         page += 1
         time.sleep(0.5)  # 서버 부하 방지
     return all_trades
+
 
 if __name__ == "__main__":
     print(f"단지코드 {complex_no}의 평형별 거래내역을 수집합니다.")
