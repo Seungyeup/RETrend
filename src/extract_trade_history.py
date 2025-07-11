@@ -5,7 +5,7 @@ import time
 
 # --- 설정 ---
 complex_no = 13337  # 단지코드
-output_dir = 'output'
+output_dir = '/nfs/data'
 pyeonginfo_csv = os.path.join(output_dir, f'pyeonginfo_{complex_no}.csv')
 trade_csv = os.path.join(output_dir, f'trade_history_{complex_no}.csv')
 

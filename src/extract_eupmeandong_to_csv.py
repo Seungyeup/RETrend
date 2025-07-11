@@ -5,9 +5,9 @@ import time
 
 # --- 설정 ---
 # Shigungu CSV 파일 (입력)
-shigungu_csv_path = 'output/shigungu_list.csv'
+shigungu_csv_path = '/nfs/data/shigungu_list.csv'
 # Eupmeandong CSV 파일 (출력)
-output_dir = 'output'
+output_dir = '/nfs/data'
 eupmeandong_csv_path = os.path.join(output_dir, 'eupmeandong_list.csv')
 
 # API URL 형식

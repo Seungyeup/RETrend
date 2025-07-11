@@ -5,9 +5,9 @@ import time
 
 # --- 설정 ---
 # Sido CSV 파일 (입력)
-sido_csv_path = 'output/shido_list.csv'
+sido_csv_path = '/nfs/data/shido_list.csv'
 # Shigungu CSV 파일 (출력)
-output_dir = 'output'
+output_dir = '/nfs/data'
 shigungu_csv_path = os.path.join(output_dir, 'shigungu_list.csv')
 
 # API URL 형식

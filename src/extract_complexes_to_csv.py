@@ -5,9 +5,9 @@ import time
 
 # --- 설정 ---
 # Eupmeandong CSV 파일 (입력)
-eupmeandong_csv_path = 'output/eupmeandong_list.csv'
+eupmeandong_csv_path = '/nfs/data/eupmeandong_list.csv'
 # Complex CSV 파일 (출력)
-output_dir = 'output'
+output_dir = '/nfs/data'
 complex_csv_path = os.path.join(output_dir, 'complex_list.csv')
 
 # API URL 형식

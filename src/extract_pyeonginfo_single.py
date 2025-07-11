@@ -4,7 +4,7 @@ import os
 
 # --- 설정 ---
 complex_no = 13337  # 단지코드
-output_dir = 'output'
+output_dir = '/nfs/data'
 output_csv = os.path.join(output_dir, f'pyeonginfo_{complex_no}.csv')
 
 base_url = f'https://new.land.naver.com/api/complexes/overview/{complex_no}?complexNo={complex_no}&tradeTypes='

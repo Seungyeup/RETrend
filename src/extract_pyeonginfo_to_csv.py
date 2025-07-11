@@ -5,9 +5,9 @@ import time
 
 # --- 설정 ---
 # Complex CSV 파일 (입력)
-complex_csv_path = 'output/complex_list.csv'
+complex_csv_path = '/nfs/data/complex_list.csv'
 # Pyeonginfo CSV 파일 (출력)
-output_dir = 'output'
+output_dir = '/nfs/data'
 pyeonginfo_csv_path = os.path.join(output_dir, 'pyeonginfo_list.csv')
 
 # API URL 형식
