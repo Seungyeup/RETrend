@@ -39,7 +39,7 @@ cookies = {
 }
 
 # 1. output 폴더 생성
-output_dir = 'output'
+output_dir = '/nfs/data'
 os.makedirs(output_dir, exist_ok=True)
 
 # 2. 저장 경로 변경
