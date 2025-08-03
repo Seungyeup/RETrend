@@ -1,0 +1,36 @@
+FROM bitnami/spark:3.5
+
+# ARG LIVY_VERSION=0.7.1-incubating
+ARG LIVY_VERSION=0.8.0-incubating
+
+# unzip 설치 후 Livy 설치
+# https://www.apache.org/dyn/closer.lua/incubator/livy/0.8.0-incubating/apache-livy-0.8.0-incubating_2.12-bin.zip
+USER root
+RUN install_packages unzip curl && \
+    curl -L https://downloads.apache.org/incubator/livy/${LIVY_VERSION}/apache-livy-${LIVY_VERSION}_2.12-bin.zip \
+    -o /tmp/livy.zip && \
+    unzip /tmp/livy.zip -d /opt/ && \
+    mv /opt/apache-livy-${LIVY_VERSION}_2.12-bin /opt/livy && \
+    rm /tmp/livy.zip && \
+    mkdir -p /opt/livy/logs && \
+    chown -R 1001:1001 /opt/livy && \
+    chmod -R 777 /opt/livy/logs
+
+# Iceberg + Kafka Connector 추가
+ADD https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.5.2/iceberg-spark-runtime-3.5_2.12-1.5.2.jar /opt/bitnami/spark/jars/
+ADD https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/3.5.0/spark-sql-kafka-0-10_2.12-3.5.0.jar /opt/bitnami/spark/jars/
+
+# Hadoop AWS for S3A
+ADD https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.6/hadoop-aws-3.3.6.jar /opt/bitnami/spark/jars/
+ADD https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.367/aws-java-sdk-bundle-1.12.367.jar /opt/bitnami/spark/jars/
+
+# 환경변수
+ENV SPARK_HOME=/opt/bitnami/spark
+ENV LIVY_HOME=/opt/livy
+ENV PATH=$PATH:$LIVY_HOME/bin
+
+# Kerberos 사용자 추가 (비활성화 하더라도 추가 필요함)
+# UID 1001과 동일한 계정 추가 (이름은 마음대로 가능하지만 UID는 1001로 고정해야 함)
+RUN echo "sparkuser:x:1001:1001::/home/sparkuser:/bin/bash" >> /etc/passwd
+
+USER 1001

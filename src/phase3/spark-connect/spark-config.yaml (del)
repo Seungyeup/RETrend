@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+  namespace: spark-cluster
+data:
+  spark-defaults.conf: |
+    # Auth (Kerberos)
+    spark.hadoop.security.authentication=Simple
+    spark.hadoop.security.authorization=false  
+
+    # Iceberg Catalog
+    spark.sql.catalog.iceberg=org.apache.iceberg.spark.SparkCatalog
+    spark.sql.catalog.iceberg.catalog-impl=org.apache.iceberg.hadoop.HadoopCatalog
+    spark.sql.catalog.iceberg.warehouse=s3a://lakehouse/warehouse
+
+    # MinIO (외부)
+    spark.sql.catalog.iceberg.hadoop.fs.s3a.endpoint=http://172.30.1.28:9000
+    spark.sql.catalog.iceberg.hadoop.fs.s3a.access.key=minioadmin
+    spark.sql.catalog.iceberg.hadoop.fs.s3a.secret.key=minioadmin
+    spark.sql.catalog.iceberg.hadoop.fs.s3a.path.style.access=true
+
+    # Hive Metastore
+    spark.hadoop.hive.metastore.uris=thrift://172.30.1.30:9083
+
+    # Livy
+    spark.jars.ivy /tmp/.ivy2

@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-connect-gateway
+  namespace: spark-cluster
+  labels:
+    app: spark-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-connect
+  template:
+    metadata:
+      labels:
+        app: spark-connect
+    spec:
+      securityContext:
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+        - name: spark-connect
+          image: dave126/spark-connect-gateway:1.2.1
+          imagePullPolicy: Always
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Djava.security.auth.login.config="
+            - name: HADOOP_USER_NAME
+              value: "sparkuser"
+            - name: HOME
+              value: "/tmp"
+          ports:
+            - name: connect-grpc
+              containerPort: 15002
+          command: [ "sh", "-c" ]
+          args:
+            - >
+              exec /opt/spark/bin/spark-submit
+              --class org.apache.spark.sql.connect.service.SparkConnectServer
+              --name Spark Connect server
+              --packages org.apache.spark:spark-connect_2.12:3.5.6
+              --conf spark.connect.grpc.server.bindAddress=0.0.0.0
+              --conf spark.connect.grpc.server.port=15002
+              --conf spark.hadoop.hadoop.security.authentication=simple
+              --conf spark.hadoop.hadoop.security.authorization=false
+              --conf spark.local.dir=/tmp/spark-local
+              --conf spark.sql.connect.artifact.rootDirectory=/tmp/connect-artifacts
+          readinessProbe:
+            tcpSocket:
+              port: 15002
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: 15002
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: connect-artifacts
+              mountPath: /tmp/connect-artifacts
+            - name: spark-local
+              mountPath: /tmp/spark-local
+            - name: artifacts
+              mountPath: /artifacts
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+      volumes:
+        - name: connect-artifacts
+          emptyDir: {}
+        - name: spark-local
+          emptyDir: {}
+        - name: artifacts
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-connect
+  namespace: spark-cluster
+  labels:
+    app: spark-connect
+spec:
+  selector:
+    app: spark-connect
+  ports:
+    - name: connect
+      port: 15002
+      targetPort: 15002
+  type: ClusterIP

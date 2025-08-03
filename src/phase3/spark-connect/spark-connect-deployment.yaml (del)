@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-connect-gateway
+  namespace: spark-cluster
+  labels:
+    app: spark-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-connect
+  template:
+    metadata:
+      labels:
+        app: spark-connect
+    spec:
+      containers:
+        - name: spark-connect
+          image: bitnami/spark:3.5
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SPARK_HOME
+              value: /opt/bitnami/spark
+            - name: HOME
+              value: /tmp
+          ports:
+            - name: connect-grpc
+              containerPort: 15002
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting Spark Connect gateway..."
+              mkdir -p /tmp/.ivy2/local
+              exec $SPARK_HOME/bin/spark-shell \
+                --conf spark.sql.connect.enabled=true \
+                --conf spark.connect.grpc.server.port=15002 \
+                --conf spark.ui.enabled=false \
+                --conf spark.master=local[*] \
+                --conf spark.jars.ivy=/tmp/.ivy2
+          readinessProbe:
+            tcpSocket:
+              port: 15002
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 15002
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-connect
+  namespace: spark-cluster
+  labels:
+    app: spark-connect
+spec:
+  selector:
+    app: spark-connect
+  ports:
+    - name: connect
+      port: 15002
+      targetPort: 15002
+  type: ClusterIP

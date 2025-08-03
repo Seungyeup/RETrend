@@ -1,0 +1,24 @@
+{
+    "kernel_python_credentials": {
+        "username": "livyuser",
+        "password": "livypass",
+        "url": "http://livy.spark-cluster.svc.cluster.local:8998",
+        "auth": "None"
+    },
+    "kernel_scala_credentials": {
+        "username": "livyuser",
+        "password": "livypass",
+        "url": "http://livy.spark-cluster.svc.cluster.local:8998",
+        "auth": "None"
+    },
+    "kernel_r_credentials": {
+        "username": "livyuser",
+        "password": "livypass",
+        "url": "http://livy.spark-cluster.svc.cluster.local:8998",
+        "auth": "None"
+    },
+    "logging_config": {
+      "version": 1
+    }
+  }
+  

@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eux
+
+# 환경 변수
+export JAVA_TOOL_OPTIONS="-Djava.security.auth.login.config="
+
+# 기본 경로 (fsGroup=1001이 적용돼 있으면 sparkuser가 쓰기 가능)
+ARTIFACT_ROOT=${SPARK_SQL_CONNECT_ARTIFACT_ROOT:-/tmp/connect-artifacts}
+LOCAL_DIR=${SPARK_LOCAL_DIR:-/tmp/spark-local}
+
+# 디렉터리 보장 (fsGroup이 있으면 ownership이 그룹 기준으로 맞춰진다)
+mkdir -p "$ARTIFACT_ROOT" "$LOCAL_DIR"
+
+echo "Using artifact root: $ARTIFACT_ROOT"
+echo "Using local.dir: $LOCAL_DIR"
+
+# Spark Connect 서버 실행
+exec $SPARK_HOME/bin/spark-submit \
+  --class org.apache.spark.sql.connect.service.SparkConnectServer \
+  --name "Spark Connect server" \
+  --packages org.apache.spark:spark-connect_2.12:3.5.6 \
+  --conf spark.connect.grpc.server.bindAddress=0.0.0.0 \
+  --conf spark.connect.grpc.server.port=15002 \
+  --conf spark.hadoop.hadoop.security.authentication=simple \
+  --conf spark.hadoop.hadoop.security.authorization=false \
+  --conf spark.local.dir="$LOCAL_DIR" \
+  --conf spark.sql.connect.artifact.rootDirectory="$ARTIFACT_ROOT"

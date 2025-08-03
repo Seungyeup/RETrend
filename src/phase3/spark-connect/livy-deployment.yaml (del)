@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: livy-config
+  namespace: spark-cluster
+data:
+  livy.conf: |
+    livy.server.auth.type=basic
+    livy.server.auth.basic.user=livyuser
+    livy.server.auth.basic.password=livypass
+
+    # RSC RPC 관련 (기존 워크어라운드 유지)
+    livy.rsc.rpc.server.auth=none
+    livy.rsc.rpc.auth.enabled=false
+    livy.rsc.rpc.server.address=0.0.0.0
+
+    # 기타 안정화
+    livy.server.session.timeout-check=false
+    livy.server.recovery.mode=off
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: livy
+  namespace: spark-cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: livy
+  template:
+    metadata:
+      labels:
+        app: livy
+    spec:
+      containers:
+      - name: livy
+        image: dave126/spark:1.0.5-livy_0.8.0
+        command: ["/opt/livy/bin/livy-server"]
+        ports:
+        - containerPort: 8998
+        volumeMounts:
+        - name: livy-config
+          mountPath: /opt/livy/conf
+        env:
+        - name: HOME
+          value: /opt/livy
+        - name: SPARK_USER
+          value: sparkuser
+        - name: SPARK_JARS_IVY
+          value: /tmp/.ivy2
+      volumes:
+      - name: livy-config
+        configMap:
+          name: livy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: livy
+  namespace: spark-cluster
+spec:
+  type: ClusterIP
+  selector:
+    app: livy
+  ports:
+    - port: 8998
+      targetPort: 8998
