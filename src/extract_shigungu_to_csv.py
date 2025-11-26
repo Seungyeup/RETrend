@@ -2,13 +2,32 @@ import requests
 import pandas as pd
 import os
 import time
+import s3fs # Added
+import boto3 # Added
+
+# MinIO Configuration (using environment variables from Dockerfile)
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY")
+
+# Configure s3fs for MinIO
+s3_storage_options = {
+    "client_kwargs": {
+        "endpoint_url": MINIO_ENDPOINT,
+        "aws_access_key_id": MINIO_ACCESS_KEY,
+        "aws_secret_access_key": MINIO_SECRET_KEY,
+        "verify": False # Use False for MinIO if not using SSL or self-signed certs
+    },
+    "key": MINIO_ACCESS_KEY, # For pandas to_csv
+    "secret": MINIO_SECRET_KEY, # For pandas to_csv
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT} # For pandas to_csv
+}
 
 # --- 설정 ---
 # Sido CSV 파일 (입력)
-sido_csv_path = '/nfs/data/shido_list.csv'
+sido_csv_path = 's3://retrend-raw-data/shido_list.csv'
 # Shigungu CSV 파일 (출력)
-output_dir = '/nfs/data'
-shigungu_csv_path = os.path.join(output_dir, 'shigungu_list.csv')
+shigungu_csv_path = 's3://retrend-raw-data/shigungu_list.csv'
 
 # API URL 형식
 base_url = 'https://new.land.naver.com/api/regions/list?cortarNo={cortarNo}'
@@ -63,14 +82,8 @@ def get_shigungu_list(cortar_no):
 if __name__ == "__main__":
     print("시군구 정보 수집을 시작합니다.")
 
-    # Sido 목록 파일 확인
-    if not os.path.exists(sido_csv_path):
-        print(f"오류: Sido 목록 파일이 없습니다. '{sido_csv_path}'")
-        print("Sido 정보 수집을 먼저 실행해주세요.")
-        exit()
-
     # Sido 목록 읽기
-    sido_df = pd.read_csv(sido_csv_path)
+    sido_df = pd.read_csv(sido_csv_path, storage_options=s3_storage_options)
     print(f"'{sido_csv_path}' 파일에서 {len(sido_df)}개의 Sido 정보를 읽었습니다.")
 
     all_shigungu_list = []
@@ -105,7 +118,5 @@ if __name__ == "__main__":
     print(f"\n총 {len(all_shigungu_list)}개의 시군구 정보를 CSV 파일로 저장합니다.")
     shigungu_df = pd.DataFrame(all_shigungu_list)
     
-    os.makedirs(output_dir, exist_ok=True)
-    
-    shigungu_df.to_csv(shigungu_csv_path, index=False, encoding='utf-8-sig')
+    shigungu_df.to_csv(shigungu_csv_path, index=False, encoding='utf-8-sig', storage_options=s3_storage_options)
     print(f"CSV 파일 저장 완료: {shigungu_csv_path}") 

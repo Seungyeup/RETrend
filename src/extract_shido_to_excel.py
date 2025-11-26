@@ -1,6 +1,26 @@
 import requests
 import pandas as pd
 import os
+import s3fs # Added
+import boto3 # Added
+
+# MinIO Configuration (using environment variables from Dockerfile)
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY")
+
+# Configure s3fs for MinIO
+s3_storage_options = {
+    "client_kwargs": {
+        "endpoint_url": MINIO_ENDPOINT,
+        "aws_access_key_id": MINIO_ACCESS_KEY,
+        "aws_secret_access_key": MINIO_SECRET_KEY,
+        "verify": False # Use False for MinIO if not using SSL or self-signed certs
+    },
+    "key": MINIO_ACCESS_KEY, # For pandas to_csv
+    "secret": MINIO_SECRET_KEY, # For pandas to_csv
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT} # For pandas to_csv
+}
 
 # API URL 및 헤더/쿠키 정보
 url = 'https://new.land.naver.com/api/regions/list?cortarNo=0000000000'
@@ -38,12 +58,8 @@ cookies = {
     'BUC': 'szce0VgFzh7XFq2LLn7t2JvyMvByiXQQrRS_A3LjFNs='
 }
 
-# 1. output 폴더 생성
-output_dir = '/nfs/data'
-os.makedirs(output_dir, exist_ok=True)
-
 # 2. 저장 경로 변경
-csv_path = os.path.join(output_dir, 'shido_list.csv')
+csv_path = f"s3://retrend-raw-data/shido_list.csv"
 
 print("Sido 정보 수집을 시작합니다...")
 print(f"API 요청: {url}")
@@ -68,5 +84,5 @@ rows = [
 df = pd.DataFrame(rows)
 print("데이터프레임 생성 완료.")
 
-df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+df.to_csv(csv_path, index=False, encoding='utf-8-sig', storage_options=s3_storage_options)
 print(f"CSV 파일로 저장 완료: {csv_path}") 

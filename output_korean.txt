@@ -1,0 +1,28 @@
+RETrend 프로젝트 분석 및 Airflow 실행 방법에 대한 요약입니다.
+
+**프로젝트 개요:**
+"RETrend" 프로젝트는 한국의 부동산 가격 동향을 분석하는 프로젝트입니다. 데이터를 스크랩하고, 처리하며, 시각화를 제공합니다. 전체 아키텍처는 Docker, Kubernetes, Helm, 그리고 Apache Iceberg, Trino와 같은 여러 데이터 도구를 포함합니다.
+
+**Airflow 설정:**
+Airflow 환경은 Kubernetes에서 실행되도록 설계되었으며, `helm/airflow` 디렉토리에 있는 Helm 차트로 정의됩니다. 자세한 내용은 다음과 같습니다:
+
+*   **오케스트레이션:** DAG 파일 `dags/retrend_crawler_dag.py`는 `KubernetesPodOperator`를 사용합니다. 이는 데이터 크롤링 파이프라인의 각 단계가 Kubernetes 클러스터에서 개별적이고 임시적인 파드를 생성하여 실행됨을 의미합니다.
+*   **Docker 이미지:** 파이프라인 태스크는 특정 Docker 이미지인 `dave126/retrend-crawler:latest`를 사용합니다. Airflow 스케줄러 및 웹서버는 `dave126/airflow-core:2.8.4` 이미지를 사용합니다. 이러한 이미지가 Kubernetes 클러스터에서 접근 가능해야 합니다.
+*   **DAGs 소스:** 중요한 점은 `helm/airflow/values.yaml` 구성이 DAGs를 로컬 `dags` 폴더가 아닌 원격 Git 리포지토리(`https://github.com/Seungyeup/airflow-dags.git`)에서 가져오도록 설정되어 있다는 것입니다.
+*   **의존성:** 설정에는 다음이 필요합니다:
+    1.  실행 중인 Kubernetes 클러스터.
+    2.  클러스터와 연동되도록 설치 및 구성된 `helm`.
+    3.  `values.yaml`에 구성된 대로 Airflow 메타데이터 데이터베이스를 위한 `172.30.1.30:5432`에서 실행 중인 외부 PostgreSQL 데이터베이스.
+    4.  `nfs-client` 스토리지 클래스를 사용하는 로그용 Persistent Volume.
+
+**Airflow 배포 방법:**
+
+Airflow를 배포하려면 프로젝트 루트에서 일반적으로 다음 명령을 사용합니다:
+
+```bash
+helm install airflow helm/airflow -n airflow --create-namespace
+```
+
+이 명령을 실행하기 전에 위에 나열된 모든 의존성이 충족되었는지, 그리고 PostgreSQL 데이터베이스에 대한 `values.yaml`의 자격 증명이 올바른지 확인해야 합니다.
+
+이 배포를 진행하시겠습니까? 아니면 Git 리포지토리의 DAG 파일 대신 로컬 DAG 파일을 사용하는 것과 같은 변경을 원하십니까?

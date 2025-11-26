@@ -159,3 +159,7 @@ logs/
 *.tmp
 *.temp
 temp/
+
+# Data files
+data/
+GEMINI.md

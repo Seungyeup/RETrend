@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spark-connect
+  namespace: spark-cluster
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: spark-connect-role
+  namespace: spark-cluster
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch", "update", "deletecollection"]
+  - apiGroups: ["batch", "apps"]
+    resources: ["jobs", "deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: spark-connect-binding
+  namespace: spark-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: spark-connect-role
+subjects:
+  - kind: ServiceAccount
+    name: spark-connect
+    namespace: spark-cluster
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-connect-gateway
+  namespace: spark-cluster
+  labels:
+    app: spark-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-connect
+  template:
+    metadata:
+      labels:
+        app: spark-connect
+    spec:
+      serviceAccountName: spark-connect
+      containers:
+        - name: spark-connect
+          image: dave126/spark-connect-gateway:1.2.8
+          imagePullPolicy: Always
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: HADOOP_USER_NAME
+              value: "sparkuser"
+            - name: HOME
+              value: "/tmp"
+            - name: SPARK_DRIVER_HOST
+              value: "spark-connect.spark-cluster.svc.cluster.local"
+            - name: SPARK_DRIVER_PORT
+              value: "15003"
+          ports:
+            - name: connect-grpc
+              containerPort: 15002
+            - name: driver-rpc
+              containerPort: 15003
+            - name: block-manager
+              containerPort: 15004
+          command: ["/opt/spark/bin/spark-submit"]
+          args:
+            ["--class", "org.apache.spark.sql.connect.service.SparkConnectServer",
+            "--name", "spark-connect-gateway",
+            "--master", "k8s://https://kubernetes.default.svc:443",
+            "--conf", "spark.eventLog.enabled=true",
+            "--conf", "spark.eventLog.dir=s3a://k8s-logs/spark-logs/",
+            "--conf", "spark.hadoop.fs.s3a.endpoint=172.30.1.28:9000",
+            "--conf", "spark.hadoop.fs.s3a.access.key=minioadmin",
+            "--conf", "spark.hadoop.fs.s3a.secret.key=minioadmin",
+            "--conf", "spark.hadoop.fs.s3a.path.style.access=true",
+            "--conf", "spark.hadoop.fs.s3a.connection.ssl.enabled=false",
+            "--conf", "spark.hadoop.fs.s3a.metadatastore.impl=org.apache.hadoop.fs.s3a.s3guard.NullMetadataStore",
+            "--conf", "spark.hadoop.fs.s3a.authoritative=false",
+            "--conf", "spark.kubernetes.namespace=spark-cluster",
+            "--conf", "spark.kubernetes.authenticate.driver.serviceAccountName=spark-connect",
+            "--conf", "spark.kubernetes.container.image=dave126/spark-connect-gateway:1.2.8",
+            "--conf", "spark.kubernetes.driver.service.name=spark-connect",
+            "--conf", "spark.sql.connect.grpc.log.level=INFO",
+            "--conf", "spark.connect.grpc.server.bindAddress=0.0.0.0",
+            "--conf", "spark.connect.grpc.server.port=15002",
+            "--conf", "spark.driver.bindAddress=0.0.0.0",
+            "--conf", "spark.driver.host=spark-connect.spark-cluster.svc.cluster.local",
+            "--conf", "spark.driver.port=15003",
+            "--conf", "spark.port.maxRetries=0",
+            "--conf", "spark.blockManager.bindAddress=0.0.0.0",
+            "--conf", "spark.blockManager.host=spark-connect.spark-cluster.svc.cluster.local",
+            "--conf", "spark.blockManager.port=15004",
+            "--conf", "spark.hadoop.hadoop.security.authentication=simple",
+            "--conf", "spark.hadoop.hadoop.security.authorization=false",
+            "--conf", "spark.local.dir=/tmp/spark-local",
+            "--conf", "spark.sql.connect.artifact.rootDirectory=/tmp/connect-artifacts",
+            "--conf", "spark.dynamicAllocation.enabled=true",
+            "--conf", "spark.dynamicAllocation.shuffleTracking.enabled=true",
+            "--conf", "spark.dynamicAllocation.minExecutors=0",
+            "--conf", "spark.dynamicAllocation.initialExecutors=0",
+            "--conf", "spark.dynamicAllocation.maxExecutors=3"]
+          volumeMounts:
+            - name: connect-artifacts
+              mountPath: /tmp/connect-artifacts
+            - name: spark-local
+              mountPath: /tmp/spark-local
+          readinessProbe:
+            tcpSocket:
+              port: 15002
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: 15002
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+      volumes:
+        - name: connect-artifacts
+          emptyDir: {}
+        - name: spark-local
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-connect
+  namespace: spark-cluster
+  labels:
+    app: spark-connect
+spec:
+  selector:
+    app: spark-connect
+  ports:
+    - name: connect
+      port: 15002
+      targetPort: 15002
+    - name: driver-rpc
+      port: 15003
+      targetPort: 15003
+    - name: block-manager
+      port: 15004
+      targetPort: 15004
+  type: ClusterIP

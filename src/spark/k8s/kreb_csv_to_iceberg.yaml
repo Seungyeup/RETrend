@@ -1,0 +1,80 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: kreb-csv-to-iceberg
+  namespace: kubeflow
+spec:
+  type: Python
+  mode: cluster
+  image: dave126/spark-py-s3a-iceberg:3.3.1
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///opt/spark/app/kreb_csv_to_iceberg.py
+  sparkVersion: 3.3.1
+  restartPolicy:
+    type: Never
+  deps:
+    packages:
+      - org.apache.spark:spark-hadoop-cloud_2.12:3.3.1
+      # - org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.5.2  # 이미지에 올림
+      - org.apache.hadoop:hadoop-aws:3.3.4 
+      - com.amazonaws:aws-java-sdk-bundle:1.12.262 
+
+  sparkConf:
+    spark.sql.extensions: org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+    spark.sql.catalog.iceberg: org.apache.iceberg.spark.SparkCatalog
+    spark.sql.catalog.iceberg.type: hive
+    spark.sql.catalog.iceberg.uri: thrift://172.30.1.30:9083
+
+    spark.sql.catalog.iceberg.warehouse: s3a://retrend-raw-data/warehouse/iceberg
+
+    spark.hadoop.fs.s3a.impl: org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.endpoint: http://172.30.1.28:9000
+    spark.hadoop.fs.s3a.access.key: minioadmin
+    spark.hadoop.fs.s3a.secret.key: minioadmin
+    spark.hadoop.fs.s3a.path.style.access: "true"
+    spark.hadoop.fs.s3a.connection.ssl.enabled: "false"
+
+    # Ivy cache (deps 다운로드용 캐시 경로)
+    spark.jars.ivy: /tmp/.ivy
+
+  driver:
+    cores: 1
+    memory: 2g
+    serviceAccount: spark
+    env:
+      - name: HIVE_METASTORE_URI
+        value: thrift://172.30.1.30:9083
+      - name: BRONZE_PREFIX
+        value: s3a://retrend-raw-data/bronze/kreb/apt_trade
+      - name: SILVER_PREFIX
+        value: s3a://retrend-raw-data/silver/kreb/apt_trade
+      - name: ICEBERG_TABLE
+        value: iceberg.default.apt_trade
+      - name: AWS_ACCESS_KEY_ID
+        value: minioadmin
+      - name: AWS_SECRET_ACCESS_KEY
+        value: minioadmin
+    volumeMounts:
+      - name: app
+        mountPath: /opt/spark/app
+
+  executor:
+    instances: 2
+    cores: 1
+    memory: 2g
+    env:
+      - name: AWS_ACCESS_KEY_ID
+        value: minioadmin
+      - name: AWS_SECRET_ACCESS_KEY
+        value: minioadmin
+    volumeMounts:
+      - name: app
+        mountPath: /opt/spark/app
+
+  volumes:
+    - name: app
+      configMap:
+        # 미리 ConfigMap 생성 필요
+        # kubectl -n kubeflow create configmap kreb-csv-to-iceberg-app \
+        #   --from-file=kreb_csv_to_iceberg.py=src/spark/kreb_csv_to_iceberg.py
+        name: kreb-csv-to-iceberg-app

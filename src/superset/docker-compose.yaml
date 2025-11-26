@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    depends_on:
+      - superset-db
+      - superset-redis
+    environment:
+      SUPERSET_ENV: production
+      SUPERSET_LOAD_EXAMPLES: "no"
+      SUPERSET_SECRET_KEY: "change_this_to_a_random_long_secret"
+      SUPERSET_DATABASE_URI: "postgresql+psycopg2://superset:superset@superset-db:5432/superset"
+      SUPERSET_REDIS_HOST: "superset-redis"
+      SUPERSET_REDIS_PORT: "6379"
+      SUPERSET_REDIS_PASSWORD: ""
+      SUPERSET_REDIS_DB: "0"
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./superset_home:/app/superset_home
+    extra_hosts:
+      # Trino ingress IP 매핑 (MetalLB에서 nginx ingress 가 받은 IP)
+      - "trino.home.lab:172.30.1.240"
+
+  superset-db:
+    image: postgres:15
+    container_name: superset-db
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - ./superset_db:/var/lib/postgresql/data
+
+  superset-redis:
+    image: redis:7
+    container_name: superset-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - ./superset_redis:/data

@@ -1,0 +1,152 @@
+# =========================
+# 1. 기본 Airflow 설정
+# =========================
+airflowVersion: 2.8.4
+executor: KubernetesExecutor
+
+images:
+  airflow:
+    repository: apache/airflow
+    tag: 2.8.4
+    pullPolicy: Always
+
+fernetKey: "bO6EGLoCMNhkJ6zCtd6Gg82UhDGd2oJQOA4l2S65sUw="
+
+# auth_manager 문제 회피용 (fab provider 에러 방지)
+airflowLocalSettings: ""
+
+# =========================
+# 2. Airflow 설정(config 섹션)
+# =========================
+config:
+  core:
+    # executor 는 위 top-level `executor:` 로도 이미 지정돼 있지만
+    # 명시적으로 한 번 더 적어줘도 무방함
+    executor: KubernetesExecutor
+    auth_manager: airflow.auth.managers.fab.fab_auth_manager.FabAuthManager
+    # FAB 대신 simple auth 사용 (기존 로그 에러 해결)
+    # auth_manager: airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
+
+  kubernetes:
+    namespace: airflow
+    in_cluster: "True"
+    delete_worker_pods: "True"
+    # 여기서 worker 이미지 지정 → KubernetesExecutor 가 이 이미지로 Task Pod 생성
+    worker_container_repository: dave126/retrend-crawler
+    worker_container_tag: "2.8.5"
+    worker_container_image_pull_policy: "Always"
+    dags_in_image: "False"  # DAG 은 gitSync 로 가져올 예정이므로 False
+
+# =========================
+# 3. KubernetesExecutor Pod 템플릿
+# =========================
+# 예전에 쓰던 pod_template_file 을 공식 chart 의 kubernetesPodTemplate 로 이동
+kubernetesPodTemplate: |
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    labels:
+      app: {{ .Release.Name }}-worker
+  spec:
+    serviceAccountName: {{ .Release.Name }}-worker
+    restartPolicy: Never
+    containers:
+      - name: base
+        image: {{ .Values.config.kubernetes.worker_container_repository }}:{{ .Values.config.kubernetes.worker_container_tag }}
+        imagePullPolicy: {{ .Values.config.kubernetes.worker_container_image_pull_policy }}
+        env:
+          - name: AIRFLOW_HOME
+            value: /opt/airflow
+          - name: AIRFLOW__KUBERNETES__NAMESPACE
+            value: {{ .Release.Namespace }}
+          - name: AIRFLOW__KUBERNETES__DAGS_IN_IMAGE
+            value: "False"
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+
+# =========================
+# 4. Webserver / Scheduler / Worker / Triggerer
+# =========================
+webserver:
+  service:
+    # 온프렘에서는 보통 Ingress 를 쓰니까 기본은 ClusterIP 추천
+    type: ClusterIP
+
+scheduler:
+  replicas: 1
+
+# CeleryExecutor 안 쓰니까 workers 는 비활성도 가능하지만,
+# chart 버전에 따라 기본값이 있으니 일단 최소 1 유지
+workers:
+  replicas: 1
+
+triggerer:
+  enabled: true
+  replicas: 1
+
+# =========================
+# 5. 외부 PostgreSQL (메타데이터 DB)
+# =========================
+postgresql:
+  enabled: false
+
+data:
+  metadataConnection:
+    host: 172.30.1.30     # Hive VM 에 깔린 Postgres
+    port: 5432
+    user: airflow_user
+    pass: airflow_password
+    db: airflow_db
+    protocol: postgresql
+    sslmode: disable
+
+# =========================
+# 6. Redis (CeleryExecutor 안쓰니 비활성)
+# =========================
+redis:
+  enabled: false
+
+# =========================
+# 7. Logs PVC (NFS 등 RWX StorageClass)
+# =========================
+logs:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: nfs-client
+    # 기존 PVC 를 재사용하려면:
+    # existingClaim: airflow-logs-pvc
+
+# =========================
+# 8. DAGs: gitSync 사용
+# =========================
+dags:
+  persistence:
+    enabled: false
+  gitSync:
+    enabled: true
+    repo: https://github.com/Seungyeup/airflow-dags.git
+    branch: main
+    subPath: RETrend
+    # private repo 인 경우 credential/sshKey 설정 추가
+
+# =========================
+# 9. (옵션) Ingress – 필요하면 나중에 추가
+# =========================
+ingress:
+  enabled: true
+  web:
+    enabled: true
+    annotations:
+      spec.ingressClassName: nginx
+    hosts:
+      - airflow.home.lab     # 문자열 리스트
+    path: /                  # 또는 paths 사용 가능한 버전도 있음
+    tls:
+      enabled: false         # 일단 TLS 끔 (추후 true + secretName 사용)
+      secretName: ""         # 나중에 cert-manager 쓰면 여기에 이름 넣기

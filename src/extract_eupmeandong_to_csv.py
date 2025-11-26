@@ -2,13 +2,32 @@ import requests
 import pandas as pd
 import os
 import time
+import s3fs # Added
+import boto3 # Added
+
+# MinIO Configuration (using environment variables from Dockerfile)
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY")
+
+# Configure s3fs for MinIO
+s3_storage_options = {
+    "client_kwargs": {
+        "endpoint_url": MINIO_ENDPOINT,
+        "aws_access_key_id": MINIO_ACCESS_KEY,
+        "aws_secret_access_key": MINIO_SECRET_KEY,
+        "verify": False # Use False for MinIO if not using SSL or self-signed certs
+    },
+    "key": MINIO_ACCESS_KEY, # For pandas to_csv
+    "secret": MINIO_SECRET_KEY, # For pandas to_csv
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT} # For pandas to_csv
+}
 
 # --- 설정 ---
 # Shigungu CSV 파일 (입력)
-shigungu_csv_path = '/nfs/data/shigungu_list.csv'
+shigungu_csv_path = 's3://retrend-raw-data/shigungu_list.csv'
 # Eupmeandong CSV 파일 (출력)
-output_dir = '/nfs/data'
-eupmeandong_csv_path = os.path.join(output_dir, 'eupmeandong_list.csv')
+eupmeandong_csv_path = 's3://retrend-raw-data/eupmeandong_list.csv'
 
 # API URL 형식
 base_url = 'https://new.land.naver.com/api/regions/list?cortarNo={cortarNo}'
@@ -63,14 +82,8 @@ def get_eupmeandong_list(cortar_no):
 if __name__ == "__main__":
     print("읍면동 정보 수집을 시작합니다.")
 
-    # Shigungu 목록 파일 확인
-    if not os.path.exists(shigungu_csv_path):
-        print(f"오류: 시군구 목록 파일이 없습니다. '{shigungu_csv_path}'")
-        print("시군구 정보 수집을 먼저 실행해주세요.")
-        exit()
-
     # Shigungu 목록 읽기
-    shigungu_df = pd.read_csv(shigungu_csv_path)
+    shigungu_df = pd.read_csv(shigungu_csv_path, storage_options=s3_storage_options)
     print(f"'{shigungu_csv_path}' 파일에서 {len(shigungu_df)}개의 시군구 정보를 읽었습니다.")
 
     all_eupmeandong_list = []
@@ -105,7 +118,5 @@ if __name__ == "__main__":
     print(f"\n총 {len(all_eupmeandong_list)}개의 읍면동 정보를 CSV 파일로 저장합니다.")
     eupmeandong_df = pd.DataFrame(all_eupmeandong_list)
     
-    os.makedirs(output_dir, exist_ok=True)
-    
-    eupmeandong_df.to_csv(eupmeandong_csv_path, index=False, encoding='utf-8-sig')
+    eupmeandong_df.to_csv(eupmeandong_csv_path, index=False, encoding='utf-8-sig', storage_options=s3_storage_options)
     print(f"CSV 파일 저장 완료: {eupmeandong_csv_path}") 

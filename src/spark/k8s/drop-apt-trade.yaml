@@ -1,0 +1,59 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: drop-apt-trade-table
+  namespace: kubeflow
+spec:
+  type: Python
+  mode: cluster
+  image: dave126/spark-py-s3a:3.3.1
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///opt/spark/app/drop_apt_trade_table.py
+  sparkVersion: 3.3.1
+  restartPolicy:
+    type: Never
+
+  deps:
+    packages:
+      - org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.5.2
+
+  sparkConf:
+    spark.sql.extensions: org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+    spark.sql.catalog.iceberg: org.apache.iceberg.spark.SparkCatalog
+    spark.sql.catalog.iceberg.type: hive
+    spark.sql.catalog.iceberg.uri: thrift://172.30.1.30:9083
+
+    # (필요 시) main job이랑 맞춰주고 싶으면 warehouse, s3a 설정도 넣어도 됨
+    # spark.sql.catalog.iceberg.warehouse: s3a://retrend-raw-data/warehouse/iceberg
+    # spark.hadoop.fs.s3a.impl: org.apache.hadoop.fs.s3a.S3AFileSystem
+    # spark.hadoop.fs.s3a.endpoint: http://172.30.1.28:9000
+    # spark.hadoop.fs.s3a.access.key: minioadmin
+    # spark.hadoop.fs.s3a.secret.key: minioadmin
+    # spark.hadoop.fs.s3a.path.style.access: "true"
+    # spark.hadoop.fs.s3a.connection.ssl.enabled: "false"
+
+    spark.jars.ivy: /tmp/.ivy
+
+  driver:
+    cores: 1
+    memory: 1g
+    serviceAccount: spark
+    env:
+      - name: HIVE_METASTORE_URI
+        value: thrift://172.30.1.30:9083
+    volumeMounts:
+      - name: app
+        mountPath: /opt/spark/app
+
+  executor:
+    instances: 1
+    cores: 1
+    memory: 1g
+    volumeMounts:
+      - name: app
+        mountPath: /opt/spark/app
+
+  volumes:
+    - name: app
+      configMap:
+        name: drop-apt-trade-app

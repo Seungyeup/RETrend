@@ -2,13 +2,32 @@ import requests
 import pandas as pd
 import os
 import time
+import s3fs # Added
+import boto3 # Added
+
+# MinIO Configuration (using environment variables from Dockerfile)
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY")
+
+# Configure s3fs for MinIO
+s3_storage_options = {
+    "client_kwargs": {
+        "endpoint_url": MINIO_ENDPOINT,
+        "aws_access_key_id": MINIO_ACCESS_KEY,
+        "aws_secret_access_key": MINIO_SECRET_KEY,
+        "verify": False # Use False for MinIO if not using SSL or self-signed certs
+    },
+    "key": MINIO_ACCESS_KEY, # For pandas to_csv
+    "secret": MINIO_SECRET_KEY, # For pandas to_csv
+    "client_kwargs": {"endpoint_url": MINIO_ENDPOINT} # For pandas to_csv
+}
 
 # --- 설정 ---
 # Eupmeandong CSV 파일 (입력)
-eupmeandong_csv_path = '/nfs/data/eupmeandong_list.csv'
+eupmeandong_csv_path = 's3://retrend-raw-data/eupmeandong_list.csv'
 # Complex CSV 파일 (출력)
-output_dir = '/nfs/data'
-complex_csv_path = os.path.join(output_dir, 'complex_list.csv')
+complex_csv_path = 's3://retrend-raw-data/complex_list.csv'
 
 # API URL 형식
 base_url = 'https://new.land.naver.com/api/regions/complexes?cortarNo={cortarNo}&realEstateType=APT%3AABYG%3AJGC%3APRE&order='
@@ -64,20 +83,22 @@ def get_complex_list(cortar_no):
 if __name__ == "__main__":
     print("아파트 단지 정보 수집을 시작합니다.")
 
-    # Eupmeandong 목록 파일 확인
-    if not os.path.exists(eupmeandong_csv_path):
-        print(f"오류: 읍면동 목록 파일이 없습니다. '{eupmeandong_csv_path}'")
-        print("읍면동 정보 수집을 먼저 실행해주세요.")
-        exit()
-
     # Eupmeandong 목록 읽기
-    eupmeandong_df = pd.read_csv(eupmeandong_csv_path)
+    eupmeandong_df = pd.read_csv(eupmeandong_csv_path, storage_options=s3_storage_options)
     print(f"'{eupmeandong_csv_path}' 파일에서 {len(eupmeandong_df)}개의 읍면동 정보를 읽었습니다.")
 
     all_complex_list = []
     
     # 각 읍면동에 대해 단지 정보 수집
+    # 임시로 5개 읍면동만 처리하도록 제한
+    eupmeandong_limit = 5
+    processed_eupmeandongs = 0
+
     for index, eupmeandong in eupmeandong_df.iterrows():
+        if processed_eupmeandongs >= eupmeandong_limit:
+            print(f"\n{eupmeandong_limit}개 읍면동 처리 완료. 임시 제한에 따라 수집을 중단합니다.")
+            break
+
         eupmeandong_name = eupmeandong['cortarName']
         cortar_no = eupmeandong['cortarNo']
         
@@ -97,6 +118,7 @@ if __name__ == "__main__":
             
         # 서버 부하를 줄이기 위한 지연
         time.sleep(0.5)
+        processed_eupmeandongs += 1 # Increment the counter
 
     if not all_complex_list:
         print("\n수집된 단지 정보가 없습니다. 작업을 종료합니다.")
@@ -106,7 +128,5 @@ if __name__ == "__main__":
     print(f"\n총 {len(all_complex_list)}개의 단지 정보를 CSV 파일로 저장합니다.")
     complex_df = pd.DataFrame(all_complex_list)
     
-    os.makedirs(output_dir, exist_ok=True)
-    
-    complex_df.to_csv(complex_csv_path, index=False, encoding='utf-8-sig')
+    complex_df.to_csv(complex_csv_path, index=False, encoding='utf-8-sig', storage_options=s3_storage_options)
     print(f"CSV 파일 저장 완료: {complex_csv_path}") 
