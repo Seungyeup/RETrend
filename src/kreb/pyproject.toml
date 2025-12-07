@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kreb-etl"
+version = "0.1.0"
+description = "KREB apartment trade ETL (MinIO/S3 + 공공데이터)"
+authors = [
+  { name = "Seungyeup", email = "you@example.com" }
+]
+requires-python = ">=3.9"
+dependencies = [
+  "pandas",
+  "requests",
+  "xmltodict",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

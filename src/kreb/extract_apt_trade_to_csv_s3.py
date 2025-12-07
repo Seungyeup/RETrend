@@ -24,6 +24,7 @@ s3_storage_options = {
 DEFAULT_API_BASES = [
     "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev"
 ]
+
 API_BASES = [b.strip() for b in os.environ.get("KREB_API_BASES", "").split(",") if b.strip()] or DEFAULT_API_BASES
 API_PATH = os.environ.get("KREB_API_PATH", "getRTMSDataSvcAptTradeDev")
 SERVICE_KEY = os.environ.get("KREB_SERVICE_KEY") or os.environ.get("SERVICE_KEY")

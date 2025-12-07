@@ -163,3 +163,40 @@ temp/
 # Data files
 data/
 GEMINI.md
+
+# Backup directories and files
+src/backup/
+*_backup*
+*.backup
+*.bak
+
+# Output files
+output_korean.txt
+*.out
+
+# Document files
+*.doc
+*.docx
+
+# Large data directories (from AGENTS.md: do not commit new large binaries)
+parquet/
+trade_history/
+
+# Database and metastore directories (all locations)
+**/metastore_db/
+**/spark-warehouse/
+
+# Configuration files that may contain sensitive data
+**/hive-site.xml
+**/*.properties
+**/*.config
+!src/kreb/pyproject.toml
+
+# Deleted files (marked with (del))
+*(del)*
+*.del
+
+# Sample data files (keep scripts, ignore data)
+sample/*.json
+sample/*.doc
+sample/*.docx
