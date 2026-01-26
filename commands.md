@@ -133,3 +133,8 @@ kubectl -n kubeflow logs -f $(kubectl -n kubeflow get pods -l spark-role=driver 
 # Notes (air-gapped)
 # - If egress is blocked, deps.packages JAR download will fail.
 #   Build a custom Spark image with Iceberg/Hadoop-AWS jars, or mount jars and set 'spark.jars'.
+
+# kreb-csv-to-iceberg 변경 시 configmap 재생성
+kubectl -n kubeflow delete configmap kreb-csv-to-iceberg-app
+kubectl -n kubeflow create configmap kreb-csv-to-iceberg-app \
+  --from-file=kreb_csv_to_iceberg.py=src/spark/kreb_csv_to_iceberg.py

@@ -1,10 +1,61 @@
 import os
-from pyspark.sql import SparkSession, functions as F, types as T
+from pyspark.sql import SparkSession, functions as F
+
+# =========================
+# CSV 실제 헤더
+# =========================
+CSV_COLS = [
+    "aptDong", "aptNm", "aptSeq", "bonbun", "bubun", "buildYear", "buyerGbn",
+    "cdealDay", "cdealType", "dealAmount", "dealDay", "dealMonth", "dealYear",
+    "dealingGbn", "estateAgentSggNm", "excluUseAr", "floor", "jibun", "landCd",
+    "landLeaseholdGbn", "rgstDate", "roadNm", "roadNmBonbun", "roadNmBubun",
+    "roadNmCd", "roadNmSeq", "roadNmSggCd", "roadNmbCd", "sggCd", "slerGbn",
+    "umdCd", "umdNm",
+]
+
+# 영문 -> 한글 설명(댓글)
+KREB_COL_DESC_KO = {
+    "sggCd": "법정동시군구코드",
+    "umdCd": "법정동읍면동코드",
+    "landCd": "법정동지번코드",
+    "bonbun": "법정동본번코드",
+    "bubun": "법정동부번코드",
+    "roadNm": "도로명",
+    "roadNmSggCd": "도로명시군구코드",
+    "roadNmCd": "도로명코드",
+    "roadNmSeq": "도로명일련번호코드",
+    "roadNmbCd": "도로명지상지하코드",
+    "roadNmBonbun": "도로명건물본번호코드",
+    "roadNmBubun": "도로명건물부번호코드",
+    "umdNm": "법정동",
+    "aptNm": "단지명",
+    "jibun": "지번",
+    "excluUseAr": "전용면적",
+    "dealYear": "계약년도",
+    "dealMonth": "계약월",
+    "dealDay": "계약일",
+    "dealAmount": "거래금액",
+    "floor": "층",
+    "buildYear": "건축년도",
+    "aptSeq": "단지 일련번호",
+    "cdealType": "해제여부",
+    "cdealDay": "해제사유발생일",
+    "dealingGbn": "거래유형",
+    "estateAgentSggNm": "중개사소재지",
+    "rgstDate": "등기일자",
+    "aptDong": "아파트 동명",
+    "slerGbn": "매도자",
+    "buyerGbn": "매수자",
+    "landLeaseholdGbn": "토지임대부 아파트 여부",
+}
+
+DERIVED_COLS = ["lawdCd", "deal_ym", "year", "month", "_file"]
+ALL_COLS = CSV_COLS + DERIVED_COLS
 
 
 def build_spark():
-    spark = (
-        SparkSession.builder.appName("kreb-csv-to-iceberg")
+    return (
+        SparkSession.builder.appName("kreb-csv-to-iceberg-raw")
         .config(
             "spark.sql.extensions",
             "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
@@ -17,159 +68,94 @@ def build_spark():
         )
         .getOrCreate()
     )
-    return spark
+
+
+def ensure_columns(df):
+    # CSV 컬럼 누락 방어(모두 string으로 보강)
+    for c in CSV_COLS:
+        if c not in df.columns:
+            df = df.withColumn(c, F.lit(None).cast("string"))
+
+    # 파생 컬럼들은 타입 유지
+    if "lawdCd" not in df.columns:
+        df = df.withColumn("lawdCd", F.lit(None).cast("string"))
+    if "deal_ym" not in df.columns:
+        df = df.withColumn("deal_ym", F.lit(None).cast("string"))
+    if "year" not in df.columns:
+        df = df.withColumn("year", F.lit(None).cast("int"))
+    if "month" not in df.columns:
+        df = df.withColumn("month", F.lit(None).cast("int"))
+    if "_file" not in df.columns:
+        df = df.withColumn("_file", F.lit(None).cast("string"))
+
+    return df
+
+
+def create_or_recreate_table(spark, table, warehouse_base):
+    recreate = os.environ.get("RECREATE_TABLE", "false").lower() == "true"
+    if recreate:
+        spark.sql(f"DROP TABLE IF EXISTS {table}")
+
+    # 타입은 우선 안전하게 “대부분 string”, 파생 year/month만 int 권장
+    col_defs = []
+    for c in CSV_COLS:
+        ko = KREB_COL_DESC_KO.get(c, "")
+        comment = f" COMMENT '{ko}'" if ko else ""
+        col_defs.append(f"{c} string{comment}")
+
+    col_defs.append("lawdCd string COMMENT '법정동코드(경로에서 파생, LAWD_CD)'")
+    col_defs.append("deal_ym string COMMENT '거래년월(경로에서 파생, DEAL_YM=YYYYMM)'")
+    col_defs.append("year int COMMENT '거래년도(파생, deal_ym 앞 4자리)'")
+    col_defs.append("month int COMMENT '거래월(파생, deal_ym 뒤 2자리)'")
+    col_defs.append("_file string COMMENT '원본 파일 경로'")
+
+    spark.sql(
+        f"""
+        CREATE TABLE IF NOT EXISTS {table} (
+          {", ".join(col_defs)}
+        )
+        USING ICEBERG
+        LOCATION '{warehouse_base}/default/apt_trade_raw'
+        PARTITIONED BY (year, month, lawdCd)
+        """
+    )
 
 
 def main():
     bronze = os.environ.get(
         "BRONZE_PREFIX",
-        "s3a://retrend-raw-data/bronze/kreb/apt_trade",
+        "s3a://retrend-raw-data/bronze/kreb_etl_v2/apt_trade",
     ).rstrip("/")
-    silver = os.environ.get(
-        "SILVER_PREFIX",
-        "s3a://retrend-raw-data/silver/kreb/apt_trade",
+    iceberg_table = os.environ.get("ICEBERG_TABLE", "iceberg.default.apt_trade_raw")
+    warehouse_base = os.environ.get(
+        "WAREHOUSE_BASE", "s3a://retrend-raw-data/warehouse/iceberg"
     ).rstrip("/")
-    iceberg_table = os.environ.get(
-        "ICEBERG_TABLE", "iceberg.default.apt_trade"
-    )
 
     spark = build_spark()
 
     df = (
         spark.read.option("header", True)
-        .csv(f"{bronze}/lawdCd=*/year=*/month=*/part-*.csv")
+        .option("inferSchema", False)  # 원본 손상 방지: 전부 string로 읽기
+        .csv(f"{bronze}/LAWD_CD=*/DEAL_YM=*/page=*.csv")
         .withColumn("_file", F.input_file_name())
     )
 
-    # path → partition 컬럼 파생
+    # 파생 컬럼
     df = (
-        df.withColumn(
-            "lawdCd", F.regexp_extract("_file", r"lawdCd=([0-9]{5})", 1)
-        )
-        .withColumn("year", F.regexp_extract("_file", r"year=([0-9]{4})", 1).cast("int"))
-        .withColumn("month", F.regexp_extract("_file", r"month=([0-9]{2})", 1).cast("int"))
+        df.withColumn("lawdCd", F.regexp_extract("_file", r"LAWD_CD=([0-9]{5})", 1))
+        .withColumn("deal_ym", F.regexp_extract("_file", r"DEAL_YM=([0-9]{6})", 1))
+        .withColumn("year", F.substring("deal_ym", 1, 4).cast("int"))
+        .withColumn("month", F.substring("deal_ym", 5, 2).cast("int"))
     )
 
-    # ===== 여기부터 정규화 부분 수정 =====
-    def to_int(col):
-        return F.regexp_replace(F.col(col), ",", "").cast("int")
+    df = ensure_columns(df)
 
-    # 1) 거래금액: [거래금액(만원), dealAmount]
-    deal_amount = F.coalesce(
-        to_int("거래금액(만원)"),
-        to_int("dealAmount"),
-    ).alias("deal_amount_man")
+    # 중요: 테이블이 이미 “12컬럼”으로 존재하면 IF NOT EXISTS는 안 바뀜
+    # -> RECREATE_TABLE=true로 드랍 후 재생성하거나, 별도 테이블명 쓰기(apt_trade_raw 추천)
+    create_or_recreate_table(spark, iceberg_table, warehouse_base)
 
-    # 2) 건축년도: [건축년도, buildYear]
-    build_year = F.coalesce(
-        F.col("건축년도").cast("int"),
-        F.col("buildYear").cast("int"),
-    ).alias("build_year")
-
-    # 3) 거래일: [년/월/일, dealYear/dealMonth/dealDay]
-    deal_year = F.coalesce(
-        F.col("년").cast("int"),
-        F.col("dealYear").cast("int"),
-    ).alias("deal_year")
-
-    deal_month = F.coalesce(
-        F.col("월").cast("int"),
-        F.col("dealMonth").cast("int"),
-    ).alias("deal_month")
-
-    deal_day = F.coalesce(
-        F.col("일").cast("int"),
-        F.col("dealDay").cast("int"),
-    ).alias("deal_day")
-
-    # 4) 전용면적: [전용면적, excluUseAr]
-    exclusive_area = F.coalesce(
-        F.col("전용면적").cast("double"),
-        F.col("excluUseAr").cast("double"),
-    ).alias("exclusive_area")
-
-    # 5) 층: [층, floor]
-    floor = F.coalesce(
-        F.col("층").cast("int"),
-        F.col("floor").cast("int"),
-    ).alias("floor")
-
-    # 6) 아파트명: [aptNm, aptDong]
-    apt_name = F.coalesce(
-        F.col("aptNm"),
-        F.col("aptDong"),
-    ).alias("apt_name")
-
-    # 7) 법정동(동 이름): [umdNm] (필요시 후보를 더 추가)
-    dong = F.coalesce(
-        F.col("umdNm"),
-    ).alias("legal_dong")
-
-    out = df.select(
-        "lawdCd",
-        "year",
-        "month",
-        deal_amount,
-        build_year,
-        deal_year,
-        deal_month,
-        deal_day,
-        exclusive_area,
-        floor,
-        apt_name,
-        dong,
-    )
-
-    # 이하 parquet + Iceberg 쓰기는 그대로
-    (
-        out.write.mode("overwrite")
-        .partitionBy("lawdCd", "year", "month")
-        .parquet(silver)
-    )
-
-    warehouse_base = "s3a://retrend-raw-data/warehouse/iceberg"
-
-    spark.sql(
-        f"""
-        CREATE TABLE IF NOT EXISTS {iceberg_table} (
-        lawdCd string,
-        year int,
-        month int,
-        deal_amount_man int,
-        build_year int,
-        deal_year int,
-        deal_month int,
-        deal_day int,
-        exclusive_area double,
-        floor int,
-        apt_name string,
-        legal_dong string
-        )
-        USING ICEBERG
-        LOCATION '{warehouse_base}/default/apt_trade'
-        PARTITIONED BY (year, month, lawdCd)
-        """
-    )
-
-    df_silver = spark.read.parquet(silver)
-    (
-        df_silver.select(
-            "lawdCd",
-            "year",
-            "month",
-            "deal_amount_man",
-            "build_year",
-            "deal_year",
-            "deal_month",
-            "deal_day",
-            "exclusive_area",
-            "floor",
-            "apt_name",
-            "legal_dong",
-        )
-        .writeTo(iceberg_table)
-        .append()
-    )
+    out = df.select(*ALL_COLS)
+    out.writeTo(iceberg_table).append()
 
     spark.stop()
 
