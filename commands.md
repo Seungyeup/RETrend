@@ -20,7 +20,7 @@ docker buildx build \
 docker buildx build \
   --platform linux/amd64 \
   -t dave126/retrend-crawler:2.8.5 \
-  -f src/docker/crawler/Dockerfile \
+  -f docker/crawler/Dockerfile \
   . \
   --push
 
@@ -106,7 +106,7 @@ kubectl -n kubeflow logs deploy/spark-operator-controller
 # --- Spark (bronze CSV -> Parquet -> Iceberg) ---
 # 4) Create ConfigMap with PySpark app (Kubeflow namespace)
 kubectl -n kubeflow create configmap kreb-csv-to-iceberg-app \
-  --from-file=kreb_csv_to_iceberg.py=src/spark/kreb_csv_to_iceberg.py \
+  --from-file=kreb_csv_to_iceberg.py=jobs/spark/kreb_csv_to_iceberg.py \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # 5) Submit SparkApplication (adjust MinIO endpoint/creds and Hive URI inside YAML if needed)
@@ -115,11 +115,11 @@ kubectl -n kubeflow delete sparkapplication kreb-csv-to-iceberg || true
 # S3A 지원 붙인 커스텀 이미지 빌드
 docker buildx build --platform linux/amd64 \
 -t dave126/spark-py-s3a:3.3.1 \
--f src/spark/k8s/spark-py-s3a.Dockerfile \
-. \
---push
+-f docker/spark/spark-py-s3a.Dockerfile \
+ . \
+ --push
 
-kubectl apply -f src/spark/k8s/kreb_csv_to_iceberg.yaml
+kubectl apply -f infra/spark/k8s/kreb_csv_to_iceberg.yaml
 # kubectl -n kubeflow delete sparkapplication kreb-csv-to-iceberg
 
 # 6) Inspect SparkApplication
@@ -137,4 +137,62 @@ kubectl -n kubeflow logs -f $(kubectl -n kubeflow get pods -l spark-role=driver 
 # kreb-csv-to-iceberg 변경 시 configmap 재생성
 kubectl -n kubeflow delete configmap kreb-csv-to-iceberg-app
 kubectl -n kubeflow create configmap kreb-csv-to-iceberg-app \
-  --from-file=kreb_csv_to_iceberg.py=src/spark/kreb_csv_to_iceberg.py
+  --from-file=kreb_csv_to_iceberg.py=jobs/spark/kreb_csv_to_iceberg.py
+
+
+
+
+# 테스트용 LAWDCODE 1개짜리 CSV
+cat >/tmp/lawd_test.csv <<'EOF'
+LAWD_CD
+11110
+EOF
+
+# S3/MinIO 환경변수로 인한 혼선 방지(로컬 테스트면 일단 해제 권장)
+unset MINIO_ENDPOINT MINIO_ACCESS_KEY MINIO_SECRET_KEY
+
+# 반드시 테스트용 state/output로 지정
+export KREB_SERVICE_KEY='taVSJNwCXif5C1TK86D389Yu1NO4irUN5v7l5TOuezgTqZqAU4O0qn9dmu9t1Rs5hULYKVLvWfvnWekpuChnJA=='
+export KREB_DAILY_LIMIT=5
+export KREB_LAWD_CSV=/tmp/lawd_test.csv
+export KREB_STATE_URI=file:///tmp/kreb_state_test.json
+export KREB_OUTPUT_URI=file:///tmp/kreb_output_test
+export LOG_LEVEL=INFO
+
+python jobs/kreb_backfill.py
+
+# 결과 확인
+ls -la /tmp/kreb_output_test
+cat /tmp/kreb_state_test.json
+
+# MinIO(S3)에 “테스트 prefix”로 적재 테스트를 하려면(운영 state/output 건드리지 않게):
+export MINIO_ENDPOINT='http://172.30.1.28:9000'
+export MINIO_ACCESS_KEY='minioadmin'
+export MINIO_SECRET_KEY='minioadmin'
+export KREB_SERVICE_KEY='taVSJNwCXif5C1TK86D389Yu1NO4irUN5v7l5TOuezgTqZqAU4O0qn9dmu9t1Rs5hULYKVLvWfvnWekpuChnJA=='
+export KREB_DAILY_LIMIT=20
+export KREB_LAWD_CSV='s3://retrend-raw-data/shigungu_list.csv'
+export KREB_STATE_URI='s3://retrend-raw-data/kreb_state_test.json'
+export KREB_OUTPUT_URI='s3://retrend-raw-data/bronze/kreb_etl_v2/apt_trade_test'
+export LOG_LEVEL=INFO
+python jobs/kreb_backfill.py
+
+# 추가로, “기존 state가 done=true여도 무시하고 강제로 돌리기” 옵션도 있어:
+# - export KREB_IGNORE_DONE=1
+
+# docker build 
+# - 빌드+푸시(운영/K8s용, repo 루트에서 실행):
+docker buildx build --platform linux/amd64 \
+  -t dave126/kreb-backfill:0.1.2 \
+  -f docker/kreb-backfill/Dockerfile \
+  . \
+  --push
+
+# - 로컬에서만 테스트(푸시 없이):
+docker buildx build --platform linux/amd64 \
+  -t dave126/kreb-backfill:0.1.2 \
+  -f docker/kreb-backfill/Dockerfile \
+  . \
+  --load
+
+  # dag push

@@ -23,7 +23,7 @@ PYTHONPATH=./src python -m kreb_etl_v2.backfill
 # 도커 빌드 커맨드
 docker buildx build \
   --platform linux/amd64 \
-  -f src/kreb/src/docker/Dockerfile \
+  -f docker/kreb-backfill/Dockerfile \
   -t dave126/kreb-backfill:0.1.1 \
   --load .
 

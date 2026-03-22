@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trino-ingress
+  namespace: trino
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: trino.home.lab   # DNS에서 nginx LB IP(예: 172.30.1.240)에 A레코드로 매핑
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: trino
+                port:
+                  number: 8080

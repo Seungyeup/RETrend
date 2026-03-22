@@ -1,0 +1,62 @@
+# Trino 기본 설정
+server:
+  node:
+    environment: retrend
+  config:
+    # 이 아래는 chart에서 인식하는 애들만 두는게 좋음
+    http-server.http.port: 8080
+    query.max-memory: "2GB"
+    query.max-memory-per-node: "1GB"
+    discovery.uri: "http://trino-coordinator:8080"
+
+coordinator:
+  jvm:
+    maxHeapSize: "1536M"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+worker:
+  jvm:
+    maxHeapSize: "2560M"
+  resources:
+    requests:
+      cpu: "750m"
+      memory: "2Gi"
+    limits:
+      cpu: "1500m"
+      memory: "3Gi"
+
+# 여기 새로 추가 : X-Forwarded-* 헤더 처리
+additionalConfigProperties:
+  - http-server.process-forwarded=true
+
+# Service는 ClusterIP로 두고, Ingress(NGINX)로 외부 노출
+service:
+  type: ClusterIP
+  port: 8080
+
+# 🔑 인증은 일단 끔
+auth: {}
+
+# Iceberg + Hive Metastore + MinIO 카탈로그 설정
+additionalCatalogs:
+  iceberg: |-
+    connector.name=iceberg
+
+    iceberg.catalog.type=hive_metastore
+    hive.metastore.uri=thrift://172.30.1.30:9083
+
+    fs.hadoop.enabled=true
+
+    hive.s3.aws-access-key=minioadmin
+    hive.s3.aws-secret-key=minioadmin
+    hive.s3.endpoint=http://172.30.1.28:9000
+    hive.s3.path-style-access=true
+    hive.s3.ssl.enabled=false
+
+    iceberg.file-format=PARQUET

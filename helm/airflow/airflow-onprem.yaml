@@ -14,6 +14,11 @@ fernetKey: "bO6EGLoCMNhkJ6zCtd6Gg82UhDGd2oJQOA4l2S65sUw="
 
 # auth_manager 문제 회피용 (fab provider 에러 방지)
 airflowLocalSettings: ""
+extraEnv: |
+  - name: OPENLINEAGE_URL
+    value: "http://marquez.openlineage.svc.cluster.local:5000"
+  - name: OPENLINEAGE_NAMESPACE
+    value: "retrend"
 
 # =========================
 # 2. Airflow 설정(config 섹션)
