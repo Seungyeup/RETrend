@@ -1,0 +1,121 @@
+# General Airflow settings
+airflowVersion: 2.8.4 # Specify a stable Airflow version
+executor: KubernetesExecutor
+images:
+  airflow:
+    repository: apache/airflow
+    tag: 2.8.4
+    pullPolicy: Always
+
+fernetKey: bO6EGLoCMNhkJ6zCtd6Gg82UhDGd2oJQOA4l2S65sUw=
+
+# Override default airflowLocalSettings to prevent ModuleNotFoundError
+airflowLocalSettings: "" # Added this line
+
+# KubernetesExecutor specific settings
+kubernetes_executor:
+  # The Docker image for the Airflow worker pods
+  worker_container_repository: dave126/retrend-crawler # Your custom image name
+  worker_container_tag: 2.8.4 # Your custom image tag
+  # The Docker image for the KubernetesPodOperator tasks (your crawler image)
+  # This is the image that will run your Python scripts
+  pod_template_file: |
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-worker
+    spec:
+      serviceAccountName: {{ .Release.Name }}-worker
+      containers:
+        - name: base
+          image: {{ .Values.kubernetes_executor.worker_container_repository }}:{{ .Values.kubernetes_executor.worker_container_tag }}
+          imagePullPolicy: Always
+          env:
+            - name: AIRFLOW_HOME
+              value: /opt/airflow
+            - name: AIRFLOW__KUBERNETES__NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: AIRFLOW__KUBERNETES__DAGS_IN_IMAGE
+              value: "True" # Assuming DAGs are baked into the worker image or mounted
+            # Add MinIO credentials here if you want them available to all K8sExecutor tasks
+            # However, for security, it's better to pass them directly to specific tasks
+            # or use Kubernetes Secrets. For now, we'll rely on the crawler image's ENV.
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+      restartPolicy: Never # Important for tasks that complete and should not restart
+  # This is where you can define default pod configuration for tasks run by KubernetesPodOperator
+  # We'll use the image defined in the KubernetesPodOperator directly in the DAG
+  # This section is more for general worker pod configuration.
+
+# Webserver settings
+webserver:
+  # enabled: true
+  service:
+    type: LoadBalancer # Or LoadBalancer if you have one, or ClusterIP with Ingress
+
+# Scheduler settings
+scheduler:
+  replicas: 1 # Start with 1, scale up if needed
+
+# Worker settings
+workers:
+  replicas: 1 # Start with 1, scale up if needed
+  # You can specify resources for the worker pods here
+  # resources:
+  #   limits:
+  #     cpu: 1
+  #     memory: 2Gi
+  #   requests:
+  #     cpu: 500m
+  #     memory: 1Gi
+
+# PostgreSQL (metadata database)
+# For production, consider using an external PostgreSQL instance
+postgresql:
+  enabled: false # Disable the bundled PostgreSQL
+
+data: # This section is for external database connection details
+  metadataConnection:
+    host: 172.30.1.30 # IP address of your Hive VM
+    port: 5432
+    user: airflow_user
+    pass: airflow_password # The password you just confirmed works
+    db: airflow_db
+    protocol: postgresql
+    sslmode: disable # Or 'require' if you configure SSL on PostgreSQL
+
+# Redis (for CeleryExecutor, not strictly needed for KubernetesExecutor but often bundled)
+redis:
+  enabled: false # Disable if not using CeleryExecutor
+
+# Persistent Volume for logs
+# Essential for retaining logs across pod restarts
+logs:
+  persistence:
+    enabled: true
+    size: 10Gi # Adjust size as needed
+    storageClassName: nfs-client # Changed
+
+# Dags persistence (if you want to mount DAGs from a PVC)
+# For now, we assume DAGs are either baked into the worker image or synced via other means
+dags:
+  persistence:
+    enabled: false # Keep this false if using gitSync directly
+  gitSync:
+    enabled: true
+    repo: https://github.com/Seungyeup/airflow-dags.git
+    branch: main
+    subPath: RETrend # Your DAGs are in the RETrend subdirectory
+    # Optionally, configure credentials if your repo is private
+    # sshKeySecret: airflow-git-ssh-key
+    # knownHosts: airflow-git-known-hosts
+
+config:
+  core:
+    auth_manager: airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager

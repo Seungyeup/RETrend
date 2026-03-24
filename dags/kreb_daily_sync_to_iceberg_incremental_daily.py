@@ -309,6 +309,11 @@ spec:
     spark.hadoop.fs.s3a.connection.ssl.enabled: "false"
     spark.jars.ivy: /tmp/.ivy
   driver:
+    # NOTE: Without explicit coreRequest/coreLimit, SparkOperator defaults can
+    # request full cores (cpu=1), which may leave executors stuck Pending under
+    # cluster CPU pressure.
+    coreRequest: "500m"
+    coreLimit: "1000m"
     cores: 1
     memory: 2g
     serviceAccount: spark
@@ -333,7 +338,11 @@ spec:
       - name: app
         mountPath: /opt/spark/app
   executor:
-    instances: 2
+    # This job is I/O heavy (S3A + Iceberg). Keep CPU requests small to avoid
+    # long Pending when the cluster is busy.
+    instances: 1
+    coreRequest: "500m"
+    coreLimit: "1000m"
     cores: 1
     memory: 2g
     env:
@@ -347,23 +356,34 @@ spec:
         name: kreb-csv-to-iceberg-incremental-app
 YAML
 
+APP_NAME="kreb-csv-to-iceberg-incremental"
+
+dump_debug() {
+  echo "--- SparkApplication describe ---" || true
+  kubectl -n kubeflow describe sparkapplication "$APP_NAME" || true
+  echo "--- Spark pods ---" || true
+  kubectl -n kubeflow get pods -l "sparkoperator.k8s.io/app-name=$APP_NAME" -o wide || true
+  echo "--- Recent kubeflow events ---" || true
+  kubectl -n kubeflow get events --sort-by=.lastTimestamp | tail -n 50 || true
+}
+
 # Wait for completion (COMPLETED/FAILED)
 for i in $(seq 1 360); do
-  state=$(kubectl -n kubeflow get sparkapplication kreb-csv-to-iceberg-incremental -o jsonpath='{.status.applicationState.state}' 2>/dev/null || true)
+  state=$(kubectl -n kubeflow get sparkapplication "$APP_NAME" -o jsonpath='{.status.applicationState.state}' 2>/dev/null || true)
   if [ "$state" = "COMPLETED" ]; then
     echo "SparkApplication completed"
     exit 0
   fi
   if [ "$state" = "FAILED" ]; then
     echo "SparkApplication failed"
-    kubectl -n kubeflow describe sparkapplication kreb-csv-to-iceberg-incremental || true
+    dump_debug
     exit 1
   fi
   sleep 10
 done
 
 echo "Timed out waiting for SparkApplication"
-kubectl -n kubeflow describe sparkapplication kreb-csv-to-iceberg-incremental || true
+dump_debug
 exit 1
 '''
         ],

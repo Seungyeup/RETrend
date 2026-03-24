@@ -167,6 +167,7 @@ GEMINI.md
 # Backup directories and files
 src/backup/
 *_backup*
+!docs/history/helm/values.yaml_backup
 *.backup
 *.bak
 
@@ -200,3 +201,11 @@ trade_history/
 sample/*.json
 sample/*.doc
 sample/*.docx
+
+# Superset runtime/local artifacts
+infra/superset/superset_db/
+infra/superset/superset_home/superset.db
+infra/superset/superset_home/__pycache__/
+
+# Sample DAG runtime cache
+dags/sample/__pycache__/
