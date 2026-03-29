@@ -53,6 +53,11 @@ config:
     worker_container_image_pull_policy: "Always"
     dags_in_image: "False"  # DAG 은 gitSync 로 가져올 예정이므로 False
 
+  logging:
+    remote_logging: "True"
+    remote_base_log_folder: s3://retrend-raw-data/airflow/logs
+    remote_log_conn_id: aws_default
+
   openlineage:
     transport: '{"type":"http","url":"http://marquez.openlineage.svc.cluster.local:5000"}'
     namespace: retrend
@@ -108,6 +113,8 @@ workers:
 triggerer:
   enabled: true
   replicas: 1
+  persistence:
+    enabled: false
 
 # =========================
 # 5. 외부 PostgreSQL (메타데이터 DB)
@@ -136,7 +143,7 @@ redis:
 # =========================
 logs:
   persistence:
-    enabled: true
+    enabled: false
     size: 10Gi
     storageClassName: nfs-client
     # 기존 PVC 를 재사용하려면:
@@ -159,14 +166,4 @@ dags:
 # 9. (옵션) Ingress – 필요하면 나중에 추가
 # =========================
 ingress:
-  enabled: true
-  web:
-    enabled: true
-    annotations:
-      spec.ingressClassName: nginx
-    hosts:
-      - airflow.home.lab     # 문자열 리스트
-    path: /                  # 또는 paths 사용 가능한 버전도 있음
-    tls:
-      enabled: false         # 일단 TLS 끔 (추후 true + secretName 사용)
-      secretName: ""         # 나중에 cert-manager 쓰면 여기에 이름 넣기
+  enabled: false

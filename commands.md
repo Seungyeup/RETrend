@@ -36,6 +36,14 @@ helm upgrade --install airflow apache-airflow/airflow \
   --create-namespace \
   -f helm/airflow/airflow-onprem.yaml
 
+Airflow DAG source (gitSync)
+https://github.com/Seungyeup/airflow-dags.git (branch: main, subPath: RETrend)
+
+Create/refresh aws_default connection for remote task logs
+kubectl -n airflow exec deploy/airflow-scheduler -- airflow connections delete aws_default || true
+kubectl -n airflow exec deploy/airflow-scheduler -- airflow connections add aws_default \
+  --conn-json '{"conn_type":"aws","extra":{"aws_access_key_id":"<MINIO_ACCESS_KEY>","aws_secret_access_key":"<MINIO_SECRET_KEY>","endpoint_url":"http://172.30.1.28:9000","region_name":"us-east-1"}}'
+
 
 # metallb
 kubectl create namespace metallb-system
@@ -51,6 +59,13 @@ kubectl apply -f metallb-config.yaml
 
 # nginx Ingress
 kubectl apply -f ./helm/nginx/airflow-ingress-manual.yaml
+
+metrics-server
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+helm repo update
+helm upgrade --install metrics-server metrics-server/metrics-server \
+  -n default \
+  -f helm/metrics-server/values-onprem.yaml
 
 # --- Smoke test (pre-DAG quick check) ---
 # Use environment limits to fetch a tiny sample on S3

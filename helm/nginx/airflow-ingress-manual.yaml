@@ -3,9 +3,8 @@ kind: Ingress
 metadata:
   name: airflow-web
   namespace: airflow
-  annotations:
-    kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
   - host: airflow.home.lab
     http:
@@ -14,6 +13,15 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: airflow-webserver    # 위에서 본 서비스 이름
+            name: airflow-webserver
             port:
-              number: 8080             # 위에서 본 포트
+              number: 8080
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: airflow-webserver
+            port:
+              number: 8080
