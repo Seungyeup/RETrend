@@ -17,7 +17,7 @@ RETrend는 **국토부 실거래가 데이터를 수집/정제**하고, 이를 *
 - Trino 조회 계층 구성
 ![trino](docs/image/trino.png)
 - 운영 배포(Helm/Kubernetes) 및 점검 커맨드
-
+![k8s](docs/image/k8s.png)
 ---
 
 ## Architecture (Current)
