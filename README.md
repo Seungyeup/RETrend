@@ -3,14 +3,19 @@
 RETrend는 **국토부 실거래가 데이터를 수집/정제**하고, 이를 **Iceberg 기반 레이크하우스**로 적재해 분석까지 연결하는 데이터 파이프라인 프로젝트입니다.  
 현재 운영 흐름은 Airflow(KubernetesExecutor) + Spark on Kubernetes + Trino 조합을 기준으로 관리합니다.
 
+![RETred Dashboard](docs/image/superset1.png)
+
 ---
 
 ## What This Repository Covers
 
 - KREB API 기반 원천 데이터 수집(백필/증분)
 - Airflow DAG 오케스트레이션
+![Airflow](docs/image/airflow.png)
 - Spark 기반 Bronze -> Iceberg 적재
+![minio](docs/image/minio.png)
 - Trino 조회 계층 구성
+![trino](docs/image/trino.png)
 - 운영 배포(Helm/Kubernetes) 및 점검 커맨드
 
 ---
