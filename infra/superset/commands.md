@@ -14,3 +14,6 @@ docker exec -it superset superset init
 
 # superset 내 trino connection
 trino://superset@trino.home.lab:80/iceberg/default
+
+# SQL 파일(sql/superset/datasets/*.sql) 기준으로 Superset dataset SQL 동기화
+python infra/superset/sync_superset_sql.py

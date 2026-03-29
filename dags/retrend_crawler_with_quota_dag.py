@@ -2,12 +2,16 @@ from datetime import timedelta
 
 import pendulum
 from airflow import DAG
+from airflow.datasets import Dataset
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 
 # 로컬 타임존 (한국)
 local_tz = pendulum.timezone("Asia/Seoul")
 
 DAG_ID = "kreb_backfill_daily"
+
+DATASET_LAWD_CSV = Dataset("s3://retrend-raw-data/shigungu_list.csv")
+DATASET_BRONZE_APT_TRADE = Dataset("s3://retrend-raw-data/bronze/kreb_etl_v2/apt_trade")
 
 default_args = {
     "owner": "data-engineering",
@@ -59,6 +63,8 @@ with DAG(
         in_cluster=True,             # Airflow가 K8s 안에서 돌고 있을 때
         is_delete_operator_pod=True, # 작업 끝난 뒤 Pod 자동 삭제
         # service_account_name="airflow",  # 필요하면 네 SA 이름으로 지정
+        inlets=[DATASET_LAWD_CSV],
+        outlets=[DATASET_BRONZE_APT_TRADE],
     )
 
     kreb_backfill

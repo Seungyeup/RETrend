@@ -10,6 +10,9 @@ images:
     tag: 2.8.4
     pullPolicy: Always
 
+extraPipPackages:
+  - openlineage-airflow>=1.20.0,<2.0.0
+
 fernetKey: "bO6EGLoCMNhkJ6zCtd6Gg82UhDGd2oJQOA4l2S65sUw="
 
 # auth_manager 문제 회피용 (fab provider 에러 방지)
@@ -19,6 +22,14 @@ extraEnv: |
     value: "http://marquez.openlineage.svc.cluster.local:5000"
   - name: OPENLINEAGE_NAMESPACE
     value: "retrend"
+  - name: AIRFLOW__OPENLINEAGE__TRANSPORT
+    value: '{"type":"http","url":"http://marquez.openlineage.svc.cluster.local:5000"}'
+  - name: AIRFLOW__OPENLINEAGE__NAMESPACE
+    value: "retrend"
+  - name: AIRFLOW__OPENLINEAGE__SPARK_INJECT_PARENT_JOB_INFO
+    value: "True"
+  - name: AIRFLOW__OPENLINEAGE__SPARK_INJECT_TRANSPORT_INFO
+    value: "True"
 
 # =========================
 # 2. Airflow 설정(config 섹션)
@@ -41,6 +52,10 @@ config:
     worker_container_tag: "2.8.5"
     worker_container_image_pull_policy: "Always"
     dags_in_image: "False"  # DAG 은 gitSync 로 가져올 예정이므로 False
+
+  openlineage:
+    transport: '{"type":"http","url":"http://marquez.openlineage.svc.cluster.local:5000"}'
+    namespace: retrend
 
 # =========================
 # 3. KubernetesExecutor Pod 템플릿

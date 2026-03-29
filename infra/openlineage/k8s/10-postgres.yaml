@@ -9,7 +9,7 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  storageClassName: nfs-client
+  storageClassName: local-path
 ---
 apiVersion: apps/v1
 kind: Deployment

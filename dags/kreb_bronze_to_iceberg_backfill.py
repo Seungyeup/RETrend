@@ -2,11 +2,15 @@ from datetime import timedelta
 
 import pendulum
 from airflow import DAG
+from airflow.datasets import Dataset
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 
 local_tz = pendulum.timezone("Asia/Seoul")
 
 DAG_ID = "kreb_bronze_to_iceberg_backfill"
+
+DATASET_BRONZE_APT_TRADE = Dataset("s3://retrend-raw-data/bronze/kreb_etl_v2/apt_trade")
+DATASET_ICEBERG_APT_TRADE = Dataset("iceberg://default/apt_trade")
 
 default_args = {
     "owner": "data-engineering",
@@ -227,6 +231,7 @@ spec:
       - org.apache.spark:spark-hadoop-cloud_2.12:3.3.1
       - org.apache.hadoop:hadoop-aws:3.3.4
       - com.amazonaws:aws-java-sdk-bundle:1.12.262
+      - io.openlineage:openlineage-spark_2.12:1.30.1
   sparkConf:
     spark.sql.extensions: org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
     spark.sql.catalog.iceberg: org.apache.iceberg.spark.SparkCatalog
@@ -240,6 +245,10 @@ spec:
     spark.hadoop.fs.s3a.path.style.access: "true"
     spark.hadoop.fs.s3a.connection.ssl.enabled: "false"
     spark.jars.ivy: /tmp/.ivy
+    spark.extraListeners: io.openlineage.spark.agent.OpenLineageSparkListener
+    spark.openlineage.transport.type: http
+    spark.openlineage.transport.url: http://marquez.openlineage.svc.cluster.local:5000/api/v1/lineage
+    spark.openlineage.namespace: retrend
   driver:
     cores: 1
     memory: 2g
@@ -299,6 +308,8 @@ exit 1
         get_logs=True,
         in_cluster=True,
         is_delete_operator_pod=True,
+        inlets=[DATASET_BRONZE_APT_TRADE],
+        outlets=[DATASET_ICEBERG_APT_TRADE],
     )
 
     spark_backfill
