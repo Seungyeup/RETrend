@@ -1,31 +1,31 @@
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
-  name: kreb-csv-to-iceberg
+  name: kreb-csv-to-iceberg-incremental-linked
   namespace: kubeflow
 spec:
   type: Python
   mode: cluster
-  image: dave126/spark-py-s3a-iceberg:3.3.1
+  image: dave126/spark-py-s3a-iceberg:3.3.2
   imagePullPolicy: IfNotPresent
-  mainApplicationFile: local:///opt/spark/app/kreb_csv_to_iceberg.py
+  mainApplicationFile: local:///opt/spark/app/kreb_csv_to_iceberg_incremental.py
   sparkVersion: 3.3.1
   restartPolicy:
     type: Never
+
   deps:
     packages:
       - org.apache.spark:spark-hadoop-cloud_2.12:3.3.1
-      # - org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.5.2  # 이미지에 올림
-      - org.apache.hadoop:hadoop-aws:3.3.4 
-      - com.amazonaws:aws-java-sdk-bundle:1.12.262 
+      - org.apache.hadoop:hadoop-aws:3.3.4
+      - com.amazonaws:aws-java-sdk-bundle:1.12.262
       - io.openlineage:openlineage-spark_2.12:1.30.1
 
   sparkConf:
+    spark.app.name: kreb_csv_to_iceberg_incremental_linked
     spark.sql.extensions: org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
     spark.sql.catalog.iceberg: org.apache.iceberg.spark.SparkCatalog
     spark.sql.catalog.iceberg.type: hive
     spark.sql.catalog.iceberg.uri: thrift://172.30.1.30:9083
-
     spark.sql.catalog.iceberg.warehouse: s3a://retrend-raw-data/warehouse/iceberg
 
     spark.hadoop.fs.s3a.impl: org.apache.hadoop.fs.s3a.S3AFileSystem
@@ -35,7 +35,6 @@ spec:
     spark.hadoop.fs.s3a.path.style.access: "true"
     spark.hadoop.fs.s3a.connection.ssl.enabled: "false"
 
-    # Ivy cache (deps 다운로드용 캐시 경로)
     spark.jars.ivy: /tmp/.ivy
     spark.extraListeners: io.openlineage.spark.agent.OpenLineageSparkListener
     spark.openlineage.transport.type: http
@@ -54,16 +53,18 @@ spec:
         value: thrift://172.30.1.30:9083
       - name: BRONZE_PREFIX
         value: s3a://retrend-raw-data/bronze/kreb_etl_v2/apt_trade
-      - name: SILVER_PREFIX
-        value: s3a://retrend-raw-data/silver/kreb_etl_v2/apt_trade
       - name: ICEBERG_TABLE
         value: iceberg.default.apt_trade
+      - name: WAREHOUSE_BASE
+        value: s3a://retrend-raw-data/warehouse/iceberg
+      - name: KREB_DAILY_SYNC_MANIFEST_PATH
+        value: s3a://retrend-raw-data/bronze/kreb_etl_v2/apt_trade/_manifests/daily_sync/latest.json
       - name: AWS_ACCESS_KEY_ID
         value: minioadmin
       - name: AWS_SECRET_ACCESS_KEY
         value: minioadmin
       - name: RECREATE_TABLE
-        value: "true"
+        value: "false"
     volumeMounts:
       - name: app
         mountPath: /opt/spark/app
@@ -86,7 +87,4 @@ spec:
   volumes:
     - name: app
       configMap:
-        # 미리 ConfigMap 생성 필요
-        # kubectl -n kubeflow create configmap kreb-csv-to-iceberg-app \
-        #   --from-file=kreb_csv_to_iceberg.py=jobs/spark/kreb_csv_to_iceberg.py
-        name: kreb-csv-to-iceberg-app
+        name: kreb-csv-to-iceberg-incremental-app
