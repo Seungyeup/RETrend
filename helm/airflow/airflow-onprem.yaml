@@ -47,11 +47,10 @@ config:
     namespace: airflow
     in_cluster: "True"
     delete_worker_pods: "True"
-    # 여기서 worker 이미지 지정 → KubernetesExecutor 가 이 이미지로 Task Pod 생성
-    worker_container_repository: dave126/retrend-crawler
-    worker_container_tag: "2.8.5"
+    worker_container_repository: apache/airflow
+    worker_container_tag: "2.8.4"
     worker_container_image_pull_policy: "Always"
-    dags_in_image: "False"  # DAG 은 gitSync 로 가져올 예정이므로 False
+    dags_in_image: "False"
 
   logging:
     remote_logging: "True"
@@ -157,9 +156,12 @@ dags:
     enabled: false
   gitSync:
     enabled: true
-    repo: https://github.com/Seungyeup/airflow-dags.git
+    repo: https://github.com/Seungyeup/RETrend.git
     branch: main
-    subPath: RETrend
+    subPath: dags
+    env:
+      - name: GITSYNC_SUBMODULES
+        value: recursive
     # private repo 인 경우 credential/sshKey 설정 추가
 
 # =========================
