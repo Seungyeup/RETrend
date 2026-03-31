@@ -3,6 +3,8 @@ from datetime import timedelta
 import pendulum
 from airflow import DAG
 from airflow.datasets import Dataset
+from airflow.models import Variable
+from airflow.operators.python import PythonOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 
 local_tz = pendulum.timezone("Asia/Seoul")
@@ -16,6 +18,74 @@ DATASET_DAILY_SYNC_MANIFEST = Dataset(
 )
 DATASET_DAILY_SYNC_STATE = Dataset("s3://retrend-raw-data/kreb_state_daily_sync.json")
 DATASET_ICEBERG_APT_TRADE = Dataset("iceberg://default/apt_trade")
+
+
+def run_superset_sql_sync() -> None:
+    import importlib.util
+    import os
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "infra" / "superset" / "sync_superset_sql.py"
+
+    spec = importlib.util.spec_from_file_location("sync_superset_sql", script_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load script: {script_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    os.environ["SUPERSET_SQL_DIR"] = str(repo_root / "sql" / "superset" / "datasets")
+    os.environ.setdefault(
+        "SUPERSET_BASE_URL",
+        Variable.get("SUPERSET_BASE_URL", default_var="http://localhost:8088"),
+    )
+    os.environ.setdefault(
+        "SUPERSET_USERNAME",
+        Variable.get("SUPERSET_USERNAME", default_var="admin"),
+    )
+    os.environ.setdefault(
+        "SUPERSET_PASSWORD",
+        Variable.get("SUPERSET_PASSWORD", default_var="admin"),
+    )
+    os.environ.setdefault(
+        "SUPERSET_DATABASE_NAME",
+        Variable.get("SUPERSET_DATABASE_NAME", default_var="RETrend Trino Iceberg"),
+    )
+
+    os.environ.setdefault(
+        "OPENLINEAGE_URL",
+        Variable.get(
+            "OPENLINEAGE_URL",
+            default_var="http://marquez.openlineage.svc.cluster.local:5000",
+        ),
+    )
+    os.environ.setdefault(
+        "OPENLINEAGE_NAMESPACE",
+        Variable.get("OPENLINEAGE_NAMESPACE", default_var="retrend"),
+    )
+    os.environ.setdefault(
+        "OPENLINEAGE_EMIT",
+        Variable.get("OPENLINEAGE_EMIT", default_var="true"),
+    )
+    os.environ.setdefault(
+        "OPENLINEAGE_INPUT_NAMESPACE_OVERRIDE",
+        Variable.get("OPENLINEAGE_INPUT_NAMESPACE_OVERRIDE", default_var="iceberg"),
+    )
+    os.environ.setdefault(
+        "OPENLINEAGE_JOB_PREFIX",
+        Variable.get("OPENLINEAGE_JOB_PREFIX", default_var="superset_sql_sync"),
+    )
+    os.environ.setdefault(
+        "OPENLINEAGE_OUTPUT_NAMESPACE",
+        Variable.get("OPENLINEAGE_OUTPUT_NAMESPACE", default_var="superset"),
+    )
+    os.environ.setdefault(
+        "OPENLINEAGE_OUTPUT_NAME_PREFIX",
+        Variable.get("OPENLINEAGE_OUTPUT_NAME_PREFIX", default_var="dataset"),
+    )
+
+    module.main()
 
 default_args = {
     "owner": "data-engineering",
@@ -322,8 +392,15 @@ spec:
     spark.jars.ivy: /tmp/.ivy
     spark.extraListeners: io.openlineage.spark.agent.OpenLineageSparkListener
     spark.openlineage.transport.type: http
-    spark.openlineage.transport.url: http://marquez.openlineage.svc.cluster.local:5000/api/v1/lineage
+    spark.openlineage.transport.url: http://marquez.openlineage.svc.cluster.local:5000
+    spark.openlineage.transport.endpoint: /api/v1/lineage
     spark.openlineage.namespace: retrend
+    spark.openlineage.parentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_job_namespace() }}"
+    spark.openlineage.parentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_job_name(task_instance) }}"
+    spark.openlineage.parentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_run_id(task_instance) }}"
+    spark.openlineage.rootParentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_root_job_namespace(task_instance) }}"
+    spark.openlineage.rootParentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_root_job_name(task_instance) }}"
+    spark.openlineage.rootParentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_root_run_id(task_instance) }}"
   driver:
     # NOTE: Without explicit coreRequest/coreLimit, SparkOperator defaults can
     # request full cores (cpu=1), which may leave executors stuck Pending under
@@ -410,4 +487,9 @@ exit 1
         outlets=[DATASET_ICEBERG_APT_TRADE],
     )
 
-    daily_sync >> submit_spark_incremental
+    sync_superset_sql = PythonOperator(
+        task_id="sync_superset_sql_with_lineage",
+        python_callable=run_superset_sql_sync,
+    )
+
+    daily_sync >> submit_spark_incremental >> sync_superset_sql

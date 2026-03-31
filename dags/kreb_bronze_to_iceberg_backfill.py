@@ -247,8 +247,15 @@ spec:
     spark.jars.ivy: /tmp/.ivy
     spark.extraListeners: io.openlineage.spark.agent.OpenLineageSparkListener
     spark.openlineage.transport.type: http
-    spark.openlineage.transport.url: http://marquez.openlineage.svc.cluster.local:5000/api/v1/lineage
+    spark.openlineage.transport.url: http://marquez.openlineage.svc.cluster.local:5000
+    spark.openlineage.transport.endpoint: /api/v1/lineage
     spark.openlineage.namespace: retrend
+    spark.openlineage.parentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_job_namespace() }}"
+    spark.openlineage.parentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_job_name(task_instance) }}"
+    spark.openlineage.parentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_run_id(task_instance) }}"
+    spark.openlineage.rootParentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_root_job_namespace(task_instance) }}"
+    spark.openlineage.rootParentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_root_job_name(task_instance) }}"
+    spark.openlineage.rootParentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_root_run_id(task_instance) }}"
   driver:
     cores: 1
     memory: 2g
