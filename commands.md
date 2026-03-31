@@ -37,7 +37,7 @@ helm upgrade --install airflow apache-airflow/airflow \
   -f helm/airflow/airflow-onprem.yaml
 
 Airflow DAG source (gitSync)
-https://github.com/Seungyeup/airflow-dags.git (branch: main, subPath: RETrend)
+https://github.com/Seungyeup/RETrend.git (branch: main, subPath: dags)
 
 Create/refresh aws_default connection for remote task logs
 kubectl -n airflow exec deploy/airflow-scheduler -- airflow connections delete aws_default || true

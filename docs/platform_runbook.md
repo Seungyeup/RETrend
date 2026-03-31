@@ -35,7 +35,7 @@ kubectl apply -f helm/nginx/airflow-ingress-manual.yaml
 ```
 
 주의(매우 중요):
-- `helm/airflow/airflow-onprem.yaml`에서 `dags.gitSync.repo`를 사용 중이면, 실제 배포되는 DAG는 이 repo의 `dags/`가 아닐 수 있습니다.
+- 실제 배포되는 DAG는 `helm/airflow/airflow-onprem.yaml`의 `dags.gitSync.repo/branch/subPath`가 가리키는 경로입니다.
 
 ## 2) Ingestion (Bronze): KREB Backfill
 

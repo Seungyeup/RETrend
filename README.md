@@ -134,9 +134,13 @@ helm upgrade --install metrics-server metrics-server/metrics-server \
 
 Airflow는 `gitSync`를 사용하며 DAG를 외부 저장소에서 가져옵니다.
 
-- repo: `https://github.com/Seungyeup/airflow-dags.git`
+- repo: `https://github.com/Seungyeup/RETrend.git`
 - branch: `main`
-- subPath: `RETrend`
+- subPath: `dags`
+
+다른 repository DAG를 함께 보려면 `dags/` 하위에 git submodule로 연결하고,
+`dags.gitSync.env.GITSYNC_SUBMODULES=recursive`를 유지합니다.
+이 경우 배포되는 DAG 버전은 submodule SHA에 고정되며, 다른 repo 변경 반영 시 RETrend에서 submodule 포인터 업데이트 커밋이 필요합니다.
 
 즉, 이 저장소의 `dags/` 변경만으로는 운영 Airflow에 즉시 반영되지 않을 수 있습니다.
 
