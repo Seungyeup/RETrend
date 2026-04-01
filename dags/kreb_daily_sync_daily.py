@@ -12,7 +12,6 @@ DAG_ID = "kreb_daily_sync_daily"
 
 DATASET_LAWD_CSV = Dataset("s3://retrend-raw-data/shigungu_list.csv")
 DATASET_BRONZE_APT_TRADE = Dataset("s3://retrend-raw-data/bronze/kreb_etl_v2/apt_trade")
-DATASET_DAILY_SYNC_STATE = Dataset("s3://retrend-raw-data/kreb_state_daily_sync.json")
 
 default_args = {
     "owner": "data-engineering",
@@ -69,7 +68,7 @@ with DAG(
         is_delete_operator_pod=True,
         # service_account_name="airflow",
         inlets=[DATASET_LAWD_CSV],
-        outlets=[DATASET_BRONZE_APT_TRADE, DATASET_DAILY_SYNC_STATE],
+        outlets=[DATASET_BRONZE_APT_TRADE],
     )
 
     kreb_daily_sync

@@ -13,11 +13,8 @@ DAG_ID = "kreb_daily_sync_to_iceberg_incremental_daily"
 
 DATASET_LAWD_CSV = Dataset("s3://retrend-raw-data/shigungu_list.csv")
 DATASET_BRONZE_APT_TRADE = Dataset("s3://retrend-raw-data/bronze/kreb_etl_v2/apt_trade")
-DATASET_DAILY_SYNC_MANIFEST = Dataset(
-    "s3://retrend-raw-data/bronze/kreb_etl_v2/apt_trade/_manifests/daily_sync/latest.json"
-)
-DATASET_DAILY_SYNC_STATE = Dataset("s3://retrend-raw-data/kreb_state_daily_sync.json")
 DATASET_ICEBERG_APT_TRADE = Dataset("iceberg://default/apt_trade")
+DATASET_SUPERSET_VIRTUAL_DATASETS = Dataset("superset://retrend/virtual_datasets")
 
 
 def run_superset_sql_sync() -> None:
@@ -127,7 +124,7 @@ with DAG(
         in_cluster=True,
         is_delete_operator_pod=True,
         inlets=[DATASET_LAWD_CSV],
-        outlets=[DATASET_BRONZE_APT_TRADE, DATASET_DAILY_SYNC_MANIFEST, DATASET_DAILY_SYNC_STATE],
+        outlets=[DATASET_BRONZE_APT_TRADE],
     )
 
     # NOTE: This task requires RBAC that allows creating SparkApplication in kubeflow namespace.
@@ -395,6 +392,7 @@ spec:
     spark.openlineage.transport.url: http://marquez.openlineage.svc.cluster.local:5000
     spark.openlineage.transport.endpoint: /api/v1/lineage
     spark.openlineage.namespace: retrend
+    spark.openlineage.dataset.removePath.pattern: "(?<remove>/LAWD_CD=[^/]+/DEAL_YM=[^/]+.*)"
     spark.openlineage.parentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_job_namespace() }}"
     spark.openlineage.parentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_job_name(task_instance) }}"
     spark.openlineage.parentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_run_id(task_instance) }}"
@@ -483,13 +481,15 @@ exit 1
         get_logs=True,
         in_cluster=True,
         is_delete_operator_pod=True,
-        inlets=[DATASET_BRONZE_APT_TRADE, DATASET_DAILY_SYNC_MANIFEST],
+        inlets=[DATASET_BRONZE_APT_TRADE],
         outlets=[DATASET_ICEBERG_APT_TRADE],
     )
 
     sync_superset_sql = PythonOperator(
         task_id="sync_superset_sql_with_lineage",
         python_callable=run_superset_sql_sync,
+        inlets=[DATASET_ICEBERG_APT_TRADE],
+        outlets=[DATASET_SUPERSET_VIRTUAL_DATASETS],
     )
 
     daily_sync >> submit_spark_incremental >> sync_superset_sql

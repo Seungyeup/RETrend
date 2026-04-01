@@ -250,6 +250,7 @@ spec:
     spark.openlineage.transport.url: http://marquez.openlineage.svc.cluster.local:5000
     spark.openlineage.transport.endpoint: /api/v1/lineage
     spark.openlineage.namespace: retrend
+    spark.openlineage.dataset.removePath.pattern: "(?<remove>/LAWD_CD=[^/]+/DEAL_YM=[^/]+.*)"
     spark.openlineage.parentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_job_namespace() }}"
     spark.openlineage.parentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_job_name(task_instance) }}"
     spark.openlineage.parentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_run_id(task_instance) }}"

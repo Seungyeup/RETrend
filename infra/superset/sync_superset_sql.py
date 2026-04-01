@@ -415,7 +415,7 @@ def main() -> None:
         "OPENLINEAGE_OUTPUT_NAMESPACE", "superset"
     )
     openlineage_input_namespace_override = os.environ.get(
-        "OPENLINEAGE_INPUT_NAMESPACE_OVERRIDE"
+        "OPENLINEAGE_INPUT_NAMESPACE_OVERRIDE", "iceberg"
     )
     openlineage_output_name_prefix = os.environ.get(
         "OPENLINEAGE_OUTPUT_NAME_PREFIX", "dataset"

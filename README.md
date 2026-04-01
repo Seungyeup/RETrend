@@ -155,6 +155,17 @@ kubectl -n airflow exec deploy/airflow-scheduler -- airflow connections add aws_
   --conn-json '{"conn_type":"aws","extra":{"aws_access_key_id":"<MINIO_ACCESS_KEY>","aws_secret_access_key":"<MINIO_SECRET_KEY>","endpoint_url":"http://172.30.1.28:9000","region_name":"us-east-1"}}'
 ```
 
+### 3) OpenLineage Namespace / Dataset Convention
+
+Marquez lineage는 아래를 canonical identity로 사용합니다.
+
+- Bronze data: `s3://retrend-raw-data/bronze/kreb_etl_v2/apt_trade`
+- Iceberg table: `iceberg://default/apt_trade`
+- Superset virtual datasets: `superset://retrend/virtual_datasets`
+
+운영용 state/manifest 파일(`kreb_state_daily_sync.json`, `_manifests/...`)은 lineage 핵심 데이터셋으로 취급하지 않습니다.
+Spark OpenLineage는 `spark.openlineage.dataset.removePath.pattern`으로 파티션 경로(`LAWD_CD=.../DEAL_YM=...`)를 Bronze 루트로 정규화합니다.
+
 ---
 
 ## Extended Docs
