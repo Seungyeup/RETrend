@@ -393,12 +393,6 @@ spec:
     spark.openlineage.transport.endpoint: /api/v1/lineage
     spark.openlineage.namespace: retrend
     spark.openlineage.dataset.removePath.pattern: "(?<remove>/LAWD_CD=[^/]+/DEAL_YM=[^/]+.*)"
-    spark.openlineage.parentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_job_namespace() }}"
-    spark.openlineage.parentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_job_name(task_instance) }}"
-    spark.openlineage.parentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_run_id(task_instance) }}"
-    spark.openlineage.rootParentJobNamespace: "{{ macros.OpenLineageProviderPlugin.lineage_root_job_namespace(task_instance) }}"
-    spark.openlineage.rootParentJobName: "{{ macros.OpenLineageProviderPlugin.lineage_root_job_name(task_instance) }}"
-    spark.openlineage.rootParentRunId: "{{ macros.OpenLineageProviderPlugin.lineage_root_run_id(task_instance) }}"
   driver:
     # NOTE: Without explicit coreRequest/coreLimit, SparkOperator defaults can
     # request full cores (cpu=1), which may leave executors stuck Pending under
