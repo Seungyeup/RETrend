@@ -13,6 +13,22 @@ spec:
       labels:
         app: marquez-web
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: marquez-web
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: marquez-web
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: marquez-web
           image: marquezproject/marquez-web:0.50.0
@@ -25,6 +41,13 @@ spec:
               value: "5000"
             - name: WEB_PORT
               value: "3000"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "192Mi"
 ---
 apiVersion: v1
 kind: Service

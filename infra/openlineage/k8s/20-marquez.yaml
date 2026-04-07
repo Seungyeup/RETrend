@@ -13,6 +13,22 @@ spec:
       labels:
         app: marquez
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: marquez
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: marquez
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: marquez
           image: marquezproject/marquez:0.50.0
@@ -27,6 +43,13 @@ spec:
               value: "5432"
             - name: SEARCH_ENABLED
               value: "false"
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
 ---
 apiVersion: v1
 kind: Service

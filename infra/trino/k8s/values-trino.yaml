@@ -19,6 +19,26 @@ coordinator:
     limits:
       cpu: "1"
       memory: "2Gi"
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: coordinator
+          app.kubernetes.io/instance: trino
+          app.kubernetes.io/name: trino
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/component: coordinator
+                app.kubernetes.io/instance: trino
+                app.kubernetes.io/name: trino
+            topologyKey: kubernetes.io/hostname
 
 worker:
   jvm:
@@ -30,6 +50,26 @@ worker:
     limits:
       cpu: "1500m"
       memory: "3Gi"
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: worker
+          app.kubernetes.io/instance: trino
+          app.kubernetes.io/name: trino
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/component: worker
+                app.kubernetes.io/instance: trino
+                app.kubernetes.io/name: trino
+            topologyKey: kubernetes.io/hostname
 
 # 여기 새로 추가 : X-Forwarded-* 헤더 처리
 additionalConfigProperties:

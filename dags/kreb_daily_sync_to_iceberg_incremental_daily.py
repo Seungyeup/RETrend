@@ -25,13 +25,6 @@ def run_superset_sql_sync() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "infra" / "superset" / "sync_superset_sql.py"
 
-    spec = importlib.util.spec_from_file_location("sync_superset_sql", script_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Failed to load script: {script_path}")
-
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
     os.environ["SUPERSET_SQL_DIR"] = str(repo_root / "sql" / "superset" / "datasets")
     os.environ.setdefault(
         "SUPERSET_BASE_URL",
@@ -81,6 +74,13 @@ def run_superset_sql_sync() -> None:
         "OPENLINEAGE_OUTPUT_NAME_PREFIX",
         Variable.get("OPENLINEAGE_OUTPUT_NAME_PREFIX", default_var="dataset"),
     )
+
+    spec = importlib.util.spec_from_file_location("sync_superset_sql", script_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load script: {script_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
 
     module.main()
 
@@ -402,6 +402,22 @@ spec:
     cores: 1
     memory: 2g
     serviceAccount: spark
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            spark-role: driver
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  spark-role: executor
+              topologyKey: kubernetes.io/hostname
     env:
       - name: HIVE_METASTORE_URI
         value: thrift://172.30.1.30:9083
@@ -430,6 +446,22 @@ spec:
     coreLimit: "1000m"
     cores: 1
     memory: 2g
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            spark-role: executor
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  spark-role: driver
+              topologyKey: kubernetes.io/hostname
     env:
       - name: AWS_ACCESS_KEY_ID
         value: minioadmin

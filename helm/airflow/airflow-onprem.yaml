@@ -22,6 +22,8 @@ extraEnv: |
     value: "http://marquez.openlineage.svc.cluster.local:5000"
   - name: OPENLINEAGE_NAMESPACE
     value: "retrend"
+  - name: SUPERSET_SQL_DIR
+    value: "/opt/airflow/dags/repo/sql/superset/datasets"
   - name: AIRFLOW__OPENLINEAGE__TRANSPORT
     value: '{"type":"http","url":"http://marquez.openlineage.svc.cluster.local:5000"}'
   - name: AIRFLOW__OPENLINEAGE__NAMESPACE
@@ -74,6 +76,22 @@ kubernetesPodTemplate: |
   spec:
     serviceAccountName: {{ .Release.Name }}-worker
     restartPolicy: Never
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: {{ .Release.Name }}-worker
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: {{ .Release.Name }}-worker
+              topologyKey: kubernetes.io/hostname
     containers:
       - name: base
         image: {{ .Values.config.kubernetes.worker_container_repository }}:{{ .Values.config.kubernetes.worker_container_tag }}
@@ -85,6 +103,8 @@ kubernetesPodTemplate: |
             value: {{ .Release.Namespace }}
           - name: AIRFLOW__KUBERNETES__DAGS_IN_IMAGE
             value: "False"
+          - name: SUPERSET_SQL_DIR
+            value: /opt/airflow/dags/repo/sql/superset/datasets
         resources:
           requests:
             cpu: "200m"
@@ -100,9 +120,49 @@ webserver:
   service:
     # 온프렘에서는 보통 Ingress 를 쓰니까 기본은 ClusterIP 추천
     type: ClusterIP
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          component: webserver
+          release: airflow
+          tier: airflow
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                component: webserver
+                release: airflow
+                tier: airflow
+            topologyKey: kubernetes.io/hostname
 
 scheduler:
   replicas: 1
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          component: scheduler
+          release: airflow
+          tier: airflow
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                component: scheduler
+                release: airflow
+                tier: airflow
+            topologyKey: kubernetes.io/hostname
 
 # CeleryExecutor 안 쓰니까 workers 는 비활성도 가능하지만,
 # chart 버전에 따라 기본값이 있으니 일단 최소 1 유지
@@ -114,6 +174,26 @@ triggerer:
   replicas: 1
   persistence:
     enabled: false
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          component: triggerer
+          release: airflow
+          tier: airflow
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                component: triggerer
+                release: airflow
+                tier: airflow
+            topologyKey: kubernetes.io/hostname
 
 # =========================
 # 5. 외부 PostgreSQL (메타데이터 DB)

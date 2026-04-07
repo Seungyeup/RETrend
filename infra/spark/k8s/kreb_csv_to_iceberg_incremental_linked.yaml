@@ -49,6 +49,22 @@ spec:
     cores: 1
     memory: 2g
     serviceAccount: spark
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            spark-role: driver
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  spark-role: executor
+              topologyKey: kubernetes.io/hostname
     env:
       - name: HIVE_METASTORE_URI
         value: thrift://172.30.1.30:9083
@@ -76,6 +92,22 @@ spec:
     coreLimit: "1000m"
     cores: 1
     memory: 2g
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            spark-role: executor
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  spark-role: driver
+              topologyKey: kubernetes.io/hostname
     env:
       - name: AWS_ACCESS_KEY_ID
         value: minioadmin
