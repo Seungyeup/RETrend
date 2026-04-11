@@ -32,6 +32,21 @@ extraEnv: |
     value: "True"
   - name: AIRFLOW__OPENLINEAGE__SPARK_INJECT_TRANSPORT_INFO
     value: "True"
+  - name: SUPERSET_BASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: airflow-superset-auth
+        key: SUPERSET_BASE_URL
+  - name: SUPERSET_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: airflow-superset-auth
+        key: SUPERSET_USERNAME
+  - name: SUPERSET_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: airflow-superset-auth
+        key: SUPERSET_PASSWORD
 
 # =========================
 # 2. Airflow 설정(config 섹션)
@@ -105,6 +120,21 @@ kubernetesPodTemplate: |
             value: "False"
           - name: SUPERSET_SQL_DIR
             value: /opt/airflow/dags/repo/sql/superset/datasets
+          - name: SUPERSET_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: airflow-superset-auth
+                key: SUPERSET_BASE_URL
+          - name: SUPERSET_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: airflow-superset-auth
+                key: SUPERSET_USERNAME
+          - name: SUPERSET_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: airflow-superset-auth
+                key: SUPERSET_PASSWORD
         resources:
           requests:
             cpu: "200m"
