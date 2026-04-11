@@ -3,6 +3,7 @@ from datetime import timedelta
 import pendulum
 from airflow import DAG
 from airflow.datasets import Dataset
+from airflow.exceptions import AirflowSkipException
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
@@ -25,19 +26,26 @@ def run_superset_sql_sync() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "infra" / "superset" / "sync_superset_sql.py"
 
+    superset_base_url = os.environ.get("SUPERSET_BASE_URL", "").strip()
+    superset_username = os.environ.get("SUPERSET_USERNAME", "").strip()
+    superset_password = os.environ.get("SUPERSET_PASSWORD", "").strip()
+
+    if not superset_base_url:
+        superset_base_url = Variable.get("SUPERSET_BASE_URL", default_var="").strip()
+    if not superset_username:
+        superset_username = Variable.get("SUPERSET_USERNAME", default_var="").strip()
+    if not superset_password:
+        superset_password = Variable.get("SUPERSET_PASSWORD", default_var="").strip()
+
+    if not superset_base_url or not superset_username or not superset_password:
+        raise AirflowSkipException(
+            "Superset sync skipped: SUPERSET_BASE_URL/USERNAME/PASSWORD are not configured from Kubernetes Secret env or Airflow Variables"
+        )
+
     os.environ["SUPERSET_SQL_DIR"] = str(repo_root / "sql" / "superset" / "datasets")
-    os.environ.setdefault(
-        "SUPERSET_BASE_URL",
-        Variable.get("SUPERSET_BASE_URL", default_var="http://localhost:8088"),
-    )
-    os.environ.setdefault(
-        "SUPERSET_USERNAME",
-        Variable.get("SUPERSET_USERNAME", default_var="admin"),
-    )
-    os.environ.setdefault(
-        "SUPERSET_PASSWORD",
-        Variable.get("SUPERSET_PASSWORD", default_var="admin"),
-    )
+    os.environ["SUPERSET_BASE_URL"] = superset_base_url
+    os.environ["SUPERSET_USERNAME"] = superset_username
+    os.environ["SUPERSET_PASSWORD"] = superset_password
     os.environ.setdefault(
         "SUPERSET_DATABASE_NAME",
         Variable.get("SUPERSET_DATABASE_NAME", default_var="RETrend Trino Iceberg"),
@@ -402,13 +410,6 @@ spec:
     cores: 1
     memory: 2g
     serviceAccount: spark
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: ScheduleAnyway
-        labelSelector:
-          matchLabels:
-            spark-role: driver
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -446,13 +447,6 @@ spec:
     coreLimit: "1000m"
     cores: 1
     memory: 2g
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: ScheduleAnyway
-        labelSelector:
-          matchLabels:
-            spark-role: executor
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
