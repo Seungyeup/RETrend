@@ -255,13 +255,6 @@ spec:
     cores: 1
     memory: 2g
     serviceAccount: spark
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: ScheduleAnyway
-        labelSelector:
-          matchLabels:
-            spark-role: driver
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -293,13 +286,6 @@ spec:
     instances: 2
     cores: 1
     memory: 2g
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: ScheduleAnyway
-        labelSelector:
-          matchLabels:
-            spark-role: executor
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:

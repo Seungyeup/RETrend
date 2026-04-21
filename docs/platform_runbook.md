@@ -16,6 +16,24 @@
 - `helm/`: Airflow/Ingress 등 배포
 - `docs/`: 운영/아키텍처 문서 (`docs/history/`는 참고용)
 
+## 0.5) Current Endpoint Inventory
+
+운영 중 엔드포인트를 헷갈리지 않도록, 현재 확인된 접속 기준을 아래에 고정합니다.
+
+| Resource | Access Point | Current IP / Port | Notes |
+|---|---|---|---|
+| Airflow | `http://airflow.home.lab` | ingress address `172.30.1.37`, shared ingress LB `172.30.1.240:80` | Kubernetes ingress |
+| Grafana | `http://monitoring.home.lab` | ingress address `172.30.1.37`, shared ingress LB `172.30.1.240:80` | Kubernetes ingress |
+| Trino | `http://trino.home.lab` | ingress address `172.30.1.37`, shared ingress LB `172.30.1.240:80` | Kubernetes ingress |
+| Marquez UI/API | `http://marquez.home.lab` | ingress address `172.30.1.37`, shared ingress LB `172.30.1.240:80` | Kubernetes ingress |
+| Superset | `http://172.30.1.40:8088` | `172.30.1.40:8088` | External VM / not in Kubernetes |
+| MinIO | `http://172.30.1.28:9000` | `172.30.1.28:9000` | Object storage endpoint |
+| Hive Metastore | `thrift://172.30.1.30:9083` | `172.30.1.30:9083` | Referenced by Spark/Trino |
+
+주의:
+- `kubectl get ingress -A -o wide` 기준 현재 ingress address는 `172.30.1.37`로 보이지만, ingress-nginx Service external IP는 `172.30.1.240`입니다.
+- Superset은 Kubernetes Service/Ingress가 아니라 외부 VM(`172.30.1.40:8088`) 기준으로 본다.
+
 ## 1) Orchestration: Airflow
 
 핵심 DAG:
@@ -133,6 +151,9 @@ kubectl apply -f infra/trino/k8s/trino-ingress.yaml
 
 ## 5) BI: Superset
 
+현재 운영 Superset endpoint:
+- `http://172.30.1.40:8088` (external VM, not Kubernetes)
+
 로컬/VM에서 docker compose:
 ```
 docker compose -f infra/superset/docker-compose.yaml up -d
@@ -148,14 +169,44 @@ docker exec -it superset superset init
 Trino connection 예:
 - `trino://superset@trino.home.lab:80/iceberg/default`
 
-## 6) 테스트/검증
+## 6) Monitoring: Grafana
+
+현재 운영 Ingress는 `helm/nginx/monitoring-ingress-manual.yaml`에서 아래 백엔드를 기대합니다.
+
+- host: `monitoring.home.lab`
+- service: `kube-prometheus-stack-grafana`
+- namespace: `default`
+- service port: `80`
+
+따라서 클러스터 복구 후 Grafana를 다시 올릴 때는 release 이름을 반드시 `kube-prometheus-stack`으로 유지해야 기존 Ingress와 이름이 맞습니다.
+
+```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+helm upgrade --install kube-prometheus-stack grafana/grafana \
+  --namespace default \
+  -f helm/grafana/values-onprem.yaml
+
+kubectl apply -f helm/nginx/monitoring-ingress-manual.yaml
+```
+
+검증:
+
+```bash
+kubectl get svc -n default kube-prometheus-stack-grafana
+kubectl get endpoints -n default kube-prometheus-stack-grafana
+kubectl describe ingress -n default monitoring-grafana
+```
+
+## 7) 테스트/검증
 
 KREB 패키지 테스트:
 ```
 python -m pytest -q src/kreb/tests
 ```
 
-## 7) 보안(필수 개선)
+## 8) 보안(필수 개선)
 
 현재 DAG/도커파일에 secret이 하드코딩된 흔적이 있습니다.
 운영에서는 반드시 Kubernetes Secret / Airflow Connection/Variable/Secret로 옮기고,

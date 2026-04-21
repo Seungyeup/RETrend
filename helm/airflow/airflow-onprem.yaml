@@ -1,13 +1,13 @@
 # =========================
 # 1. 기본 Airflow 설정
 # =========================
-airflowVersion: 2.8.4
+airflowVersion: 2.11.0
 executor: KubernetesExecutor
 
 images:
   airflow:
     repository: apache/airflow
-    tag: 2.8.4
+    tag: 2.11.0
     pullPolicy: Always
 
 extraPipPackages:
@@ -65,9 +65,13 @@ config:
     in_cluster: "True"
     delete_worker_pods: "True"
     worker_container_repository: apache/airflow
-    worker_container_tag: "2.8.4"
+    worker_container_tag: "2.11.0"
     worker_container_image_pull_policy: "Always"
     dags_in_image: "False"
+
+  kubernetes_executor:
+    delete_worker_pods: "True"
+    delete_worker_pods_on_failure: "True"
 
   logging:
     remote_logging: "True"

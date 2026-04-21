@@ -60,6 +60,22 @@ kubectl apply -f metallb-config.yaml
 # nginx Ingress
 kubectl apply -f ./helm/nginx/airflow-ingress-manual.yaml
 
+prometheus
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm upgrade --install prometheus prometheus-community/prometheus \
+  -n default \
+  -f helm/prometheus/values-onprem.yaml
+
+grafana
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm upgrade --install kube-prometheus-stack grafana/grafana \
+  -n default \
+  -f helm/grafana/values-onprem.yaml \
+  --set-file dashboards.default.retrendPlatformResourceHealth.json=helm/grafana/dashboards/retrend-platform-resource-health.json
+kubectl apply -f ./helm/nginx/monitoring-ingress-manual.yaml
+
 metrics-server
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm repo update
