@@ -23,6 +23,8 @@ def run_superset_sql_sync() -> None:
     import os
     from pathlib import Path
 
+    import requests
+
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "infra" / "superset" / "sync_superset_sql.py"
 
@@ -90,7 +92,12 @@ def run_superset_sql_sync() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-    module.main()
+    try:
+        module.main()
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        raise AirflowSkipException(
+            f"Superset sync skipped: cannot reach {superset_base_url} ({exc})"
+        ) from exc
 
 default_args = {
     "owner": "data-engineering",
