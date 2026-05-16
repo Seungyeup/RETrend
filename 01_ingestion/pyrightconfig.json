@@ -1,0 +1,10 @@
+{
+  "include": [
+    "jobs",
+    "src/kreb/src",
+    "src/kreb/tests"
+  ],
+  "extraPaths": [
+    "./src/kreb/src"
+  ]
+}
