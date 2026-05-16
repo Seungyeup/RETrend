@@ -1,0 +1,31 @@
+# Root workspace ignore rules for the reconstructed repo.
+# The archived project under history/ keeps its own legacy ignore rules.
+
+# OS files
+.DS_Store
+**/.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Python caches
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ipynb_checkpoints/
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Agent working artifacts
+.sisyphus/drafts/
+.sisyphus/evidence/
+
+# Historical runtime artifacts
+history/infra/superset/superset_db/
+history/infra/superset/superset_home/superset.db
