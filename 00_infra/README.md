@@ -9,4 +9,5 @@ The archived implementation in `history/` is reference-only. New infrastructure 
 1. Repository hygiene and root workspace setup
 2. Cluster bootstrap verification
 3. `ingress-nginx` restoration
-4. Remaining shared infra after the earlier steps are verified
+4. `MetalLB` restoration for external IP assignment
+5. Remaining shared infra after the earlier steps are verified
